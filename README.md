@@ -1,3 +1,5 @@
+> ### 🌐 **Live Interactive Portfolio → [https://hamed7848.github.io/E-commerce-supply-chain/](https://hamed7848.github.io/E-commerce-supply-chain/)** — Discover all data without SQL: 100k transactions, $50.2M revenue, 6 Gold tables, charts & filters (100% real CSV aggregates, no dummy data). Also browse [`web/index.html`](web/index.html) / [`docs/index.html`](docs/index.html) directly in the repo.
+
 # E-Commerce Data Pipeline (Bronze → Silver → Gold)
 
 A SQL-based medallion-architecture data pipeline built on a synthetic
