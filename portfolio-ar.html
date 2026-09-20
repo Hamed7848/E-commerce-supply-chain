@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>سلسلة توريد التجارة الإلكترونية — دراسة حالة تحليل البيانات | مشروع بورتفوليو</title>
+<meta name="description" content="دراسة حالة بورتفوليو متكاملة: مسار بيانات التجارة الإلكترونية بهيكل الميدالية Bronze→Silver→Gold. 100 ألف معاملة، 50.2 مليون دولار إيرادات، 6 جداول Gold، لوحة تحكم تفاعلية — بيانات حقيقية 100% من ملفات CSV.">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Tajawal:wght@400;500;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#070a12; --bg2:#0d111d; --card:#111827; --card2:#151e32; --border:#1f2a44; --border2:#243353;
+  --text:#e8eefc; --muted:#8ea0c2; --muted2:#6b7fa3;
+  --accent:#3b82f6; --accent2:#06b6d4; --accent3:#8b5cf6;
+  --green:#10b981; --orange:#f59e0b; --red:#ef4444; --yellow:#fbbf24;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Tajawal','Cairo',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.75;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+.mono{font-family:'JetBrains Mono',monospace;direction:ltr;display:inline-block}
+.container{max-width:1200px;margin:0 auto;padding:0 24px}
+nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(18px);background:rgba(7,10,18,.78);border-bottom:1px solid var(--border)}
+.nav-inner{height:66px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.logo{display:flex;align-items:center;gap:12px;font-weight:800;letter-spacing:.01em}
+.logo-mark{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;font-weight:800;color:white;font-size:15px;box-shadow:0 8px 20px rgba(59,130,246,.35)}
+.nav-links{display:flex;gap:6px;align-items:center}
+.nav-links a{font-size:13px;color:var(--muted);font-weight:600;padding:8px 12px;border-radius:8px;transition:.15s}
+.nav-links a:hover{color:var(--text);background:rgba(255,255,255,.06)}
+.btn{padding:11px 18px;border-radius:11px;font-weight:700;font-size:13px;display:inline-flex;align-items:center;gap:8px;cursor:pointer;border:1px solid transparent;transition:.2s;white-space:nowrap}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;box-shadow:0 10px 28px rgba(59,130,246,.35)}
+.btn-primary:hover{transform:translateY(-1px)}
+.btn-ghost{border-color:var(--border);background:rgba(255,255,255,.04);color:var(--text)}
+.badge{font-size:11px;letter-spacing:.02em;padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.03);color:var(--muted);font-weight:700}
+.badge-dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;box-shadow:0 0 10px var(--green);margin-left:6px;vertical-align:middle}
+.badge-live{border-color:rgba(16,185,129,.35);background:rgba(16,185,129,.12);color:#6ee7b7}
+.hero{padding:36px 0 24px;position:relative;overflow:hidden}
+.hero::before{content:"";position:absolute;inset:0;background:radial-gradient(600px 400px at 70% -10%, rgba(59,130,246,.18), transparent 60%), radial-gradient(500px 500px at 0% 20%, rgba(139,92,246,.14), transparent 60%);pointer-events:none}
+.hero-grid{display:grid;grid-template-columns:1.2fr .9fr;gap:32px;align-items:start;position:relative}
+@media(max-width:980px){.hero-grid{grid-template-columns:1fr}}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.02em;color:var(--green);font-weight:800;margin-bottom:12px;flex-wrap:wrap}
+.eyebrow span{background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3);padding:4px 8px;border-radius:999px}
+.hero h1{font-family:'Cairo',sans-serif;font-size:42px;line-height:1.15;letter-spacing:-.02em;font-weight:800}
+.hero h1 span{background:linear-gradient(135deg,#60a5fa,#22d3ee,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+@media(max-width:600px){.hero h1{font-size:30px}}
+.hero p{color:var(--muted);font-size:15px;margin:16px 0 18px;max-width:640px;line-height:1.9}
+.hero p b{color:var(--text)}
+.kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:22px 0}
+@media(max-width:900px){.kpi-strip{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:500px){.kpi-strip{grid-template-columns:1fr}}
+.kpi{background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.01));border:1px solid var(--border);border-radius:16px;padding:14px 14px 12px;position:relative;overflow:hidden}
+.kpi::before{content:"";position:absolute;inset:0 0 auto 0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2));opacity:.9}
+.kpi label{font-size:11px;color:var(--muted);font-weight:700}
+.kpi strong{font-size:22px;display:block;margin:6px 0 2px;letter-spacing:-.02em}
+.kpi small{font-size:12px;color:var(--muted);line-height:1.5;display:block}
+.kpi .trend{font-size:11.5px;font-weight:700;margin-top:6px}
+.trend.up{color:var(--green)}.trend.mid{color:var(--muted)}.trend.warn{color:var(--orange)}
+.proof{margin:16px 0;background:linear-gradient(135deg,rgba(16,185,129,.12),rgba(59,130,246,.08));border:1px solid rgba(16,185,129,.32);border-radius:14px;padding:12px 14px;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.proof code{background:rgba(255,255,255,.06);padding:2px 6px;border-radius:6px;border:1px solid var(--border);font-size:11px}
+.hero-card{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.01));border:1px solid var(--border);border-radius:20px;padding:18px;box-shadow:0 20px 60px rgba(0,0,0,.45);backdrop-filter:blur(10px)}
+.pipeline{display:flex;align-items:center;gap:8px;margin:14px 0}
+.pipe{flex:1;text-align:center;padding:14px 6px;border-radius:14px;border:1px solid var(--border);background:var(--card);font-size:11.5px;line-height:1.5}
+.pipe.bronze{border-color:rgba(245,158,11,.45);background:linear-gradient(180deg,rgba(245,158,11,.14),rgba(245,158,11,.02))}
+.pipe.silver{border-color:rgba(148,163,184,.35);background:linear-gradient(180deg,rgba(148,163,184,.12),rgba(148,163,184,.02))}
+.pipe.gold{border-color:rgba(251,191,36,.45);background:linear-gradient(180deg,rgba(251,191,36,.16),rgba(245,158,11,.03))}
+.arrow{color:var(--muted);font-size:18px}
+.mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.mini{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px}
+.mini b{font-size:12px}.mini span{font-size:11px;color:var(--muted);display:block}
+.code{background:#0d1117;border:1px solid var(--border);border-radius:12px;padding:12px;font-size:11px;color:#8ea0c2;overflow:auto;line-height:1.7}
+section{padding:36px 0;border-top:1px solid rgba(31,42,68,.6)}
+.section-head{display:flex;justify-content:space-between;gap:16px;align-items:end;flex-wrap:wrap;margin-bottom:18px}
+.section-head h2{font-size:26px;font-weight:800}
+.section-head h2 em{font-style:normal;color:var(--muted);font-weight:600;font-size:18px}
+.section-head p{color:var(--muted);font-size:13.5px;max-width:620px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+@media(max-width:960px){.grid3,.grid2{grid-template-columns:1fr}}
+.feature{padding:16px}
+.feature h3{font-size:14px;margin-bottom:6px}
+.feature p{font-size:13px;color:var(--muted);line-height:1.7}
+.feature ul{margin-top:8px;padding-right:16px;font-size:12.5px;color:var(--muted);line-height:1.7}
+.tag{font-size:10px;font-weight:800;letter-spacing:.02em;padding:4px 8px;border-radius:999px;border:1px solid;display:inline-block}
+.tag-bronze{color:var(--orange);border-color:rgba(245,158,11,.35);background:rgba(245,158,11,.12)}
+.tag-silver{color:#cbd5e1;border-color:rgba(203,213,225,.25);background:rgba(203,213,225,.08)}
+.tag-gold{color:var(--yellow);border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.12)}
+.data-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:1100px){.data-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.data-grid{grid-template-columns:1fr}}
+.dataset{padding:14px;display:flex;flex-direction:column;gap:8px}
+.dataset-head{display:flex;align-items:center;gap:10px}
+.icon{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;font-size:16px;background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.25);flex-shrink:0}
+.dataset h4{font-size:13px}
+.dataset p{font-size:12px;color:var(--muted);line-height:1.6}
+.cols{display:flex;flex-wrap:wrap;gap:5px}
+.cols span{background:rgba(255,255,255,.04);border:1px solid var(--border);padding:3px 7px;border-radius:999px;font-size:10.5px;color:var(--muted)}
+.count{margin-right:auto;background:var(--green);color:white;font-size:10px;padding:3px 8px;border-radius:999px;font-weight:800}
+.chart-grid{display:grid;grid-template-columns:1.6fr .9fr;gap:12px}
+@media(max-width:960px){.chart-grid{grid-template-columns:1fr}}
+.chart{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px}
+.chart h4{font-size:12.5px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.chart h4 span{font-size:10.5px;color:var(--muted);font-weight:500}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.tab{padding:8px 14px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.03);font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;transition:.15s}
+.tab.active{background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;border-color:transparent;box-shadow:0 6px 18px rgba(59,130,246,.35)}
+.table-wrap{overflow:auto;border:1px solid var(--border);border-radius:12px;background:var(--card)}
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:760px}
+th{text-align:right;padding:10px 11px;background:rgba(255,255,255,.03);color:var(--muted);font-size:10px;letter-spacing:.02em;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:10px 11px;border-bottom:1px solid rgba(31,42,68,.5);text-align:right}
+tr:hover td{background:rgba(255,255,255,.02)}
+.status{padding:3px 8px;border-radius:999px;font-size:11px;font-weight:700;border:1px solid;white-space:nowrap}
+.status.ok{color:var(--green);border-color:rgba(16,185,129,.3);background:rgba(16,185,129,.11)}
+.status.warn{color:var(--orange);border-color:rgba(245,158,11,.32);background:rgba(245,158,11,.11)}
+.status.bad{color:var(--red);border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.11)}
+.input{padding:9px 11px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.03);color:var(--text);font-size:12px;outline:none;width:100%}
+.input:focus{border-color:var(--accent)}
+.insight{border-right:3px solid var(--accent);padding:8px 12px;background:rgba(59,130,246,.06);border-radius:10px 0 0 10px}
+.insight h4{font-size:12.5px;margin-bottom:3px}
+.insight p{font-size:12px;color:var(--muted);line-height:1.6}
+.stack{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:var(--card);font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px}
+footer{border-top:1px solid var(--border);padding:24px 0;color:var(--muted);font-size:12px}
+hr.sep{border:none;border-top:1px solid var(--border);margin:12px 0}
+.lang-switch{position:fixed;bottom:18px;left:18px;z-index:60;display:flex;gap:6px;background:var(--card);border:1px solid var(--border);padding:6px;border-radius:999px;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.lang-switch a{padding:6px 14px;border-radius:999px;font-size:12px;font-weight:700}
+.lang-switch a.active{background:var(--accent);color:white}
+</style>
+</head>
+<body>
+<div class="lang-switch"><a href="portfolio-en.html">English</a><a class="active" href="portfolio.html">العربية</a></div>
+
+<nav>
+  <div class="container nav-inner">
+    <div class="logo"><div class="logo-mark">◈</div> <span>البورتفوليو<span style="color:var(--muted);font-weight:600"> / سلسلة توريد التجارة الإلكترونية</span></span> <span class="badge badge-live" style="margin-right:8px"><span class="badge-dot"></span>بيانات حية</span></div>
+    <div class="nav-links">
+      <a href="#overview">نظرة عامة</a>
+      <a href="#architecture">المسار</a>
+      <a href="#data">البيانات</a>
+      <a href="#dashboard">لوحة التحكم</a>
+      <a href="#insights">الرؤى</a>
+      <a href="https://github.com/Hamed7848/E-commerce-supply-chain" target="_blank" style="border:1px solid var(--border);background:rgba(255,255,255,.04)">GitHub ↗</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero container">
+  <div class="hero-grid">
+    <div>
+      <div class="eyebrow"><span>◆ دراسة حالة تحليل بيانات — مشروع 01</span> <span class="mono" style="color:var(--muted);font-size:11px">Bronze → Silver → Gold • هيكل الميدالية</span></div>
+      <h1>سلسلة توريد<br><span>التجارة الإلكترونية</span> — مسار البيانات والتحليلات</h1>
+      <p>مسار بيانات <b>SQL بهيكل الميدالية</b> مبني على 8 مجموعات بيانات حقيقية للتجارة الإلكترونية. من الاستيراد الخام (<b>Bronze</b>) → التنظيف والتنميط (<b>Silver</b>) → جداول <b>Gold</b> الجاهزة للأعمال وذكاء الأعمال. كل رسم بياني ومؤشر وجدول أدناه <b>محسوب من ملفات CSV الخام</b> — مجاميع حقيقية 100%، بلا بيانات وهمية.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px">
+        <a class="btn btn-primary" href="#dashboard">استكشاف لوحة التحكم ←</a>
+        <a class="btn btn-ghost" href="https://github.com/Hamed7848/E-commerce-supply-chain" target="_blank">عرض المستودع</a>
+        <a class="btn btn-ghost mono" href="#provenance" style="font-size:12px">كيف تم التحقق؟</a>
+      </div>
+
+      <div id="provenance" class="proof">
+        <div style="flex:1;min-width:280px">
+          <div class="mono" style="font-size:11px;color:#6ee7b7;font-weight:800">✓ تم التحقق • بلا بيانات وهمية</div>
+          <div style="font-size:12px;margin-top:4px;color:var(--text)">المصدر: <span class="mono">data raw/*.csv</span> • <span class="mono">عملاء 8,000 • منتجات 500 • مخزون 500 • موردون 998 • تسويق 216 • أسعار 18,000 • معاملات 100,000 • مرتجعات 7,126</span></div>
+          <div class="mono" style="font-size:11px;color:var(--muted);margin-top:4px">تاريخ المرجع للتسرب والسرعة: <b style="color:var(--text)">2024-12-31</b> (= MAX تاريخ المعاملة) • راجع <span class="mono">real_kpis.json</span></div>
+        </div>
+        <div class="mono" style="font-size:11px;background:rgba(255,255,255,.04);padding:8px 10px;border-radius:10px;border:1px solid var(--border);max-width:300px">البيع الصحيح = مكتمل + مسترجع (94,951) • ملغى 5,049 مستبعد • 36 شهر 2022-01 → 2024-12</div>
+      </div>
+
+      <div class="kpi-strip">
+        <div class="kpi"><label>إجمالي الإيرادات (الصالح)</label><strong>$50.22M</strong><small>94,951 طلب • $17.01M ربح • هامش 33.87%</small><div class="trend up">↗ مجمع حقيقي — transactions.csv</div></div>
+        <div class="kpi"><label>المعاملات / متوسط الطلب</label><strong>100,000</strong><small>220 ألف وحدة • متوسط $528.94 • شحن $1.94M</small><div class="trend mid">220,365 وحدة مباعة</div></div>
+        <div class="kpi"><label>معدل الإرجاع</label><strong>7.50%</strong><small>7,126 مرتجع • مسترد $3.71M</small><div class="trend warn">↘ 5,049 ملغى مستبعد</div></div>
+        <div class="kpi"><label>العائد على الإنفاق (فعلي)</label><strong>13.17×</strong><small>إنفاق $3.81M • معلن 13.86× • فرق −4 إلى −7%</small><div class="trend warn">↘ مبالغة منهجية في التقارير</div></div>
+      </div>
+    </div>
+
+    <div class="hero-card">
+      <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:13px">تدفق الميدالية — أعداد الصفوف الحقيقية</b><span class="mono" style="font-size:10px;color:var(--muted)">bb_bronze → ss_silver → gg_gold</span></div>
+      <div class="pipeline">
+        <div class="pipe bronze"><div style="font-size:18px">◨</div><b>Bronze</b><div class="mono">bb_bronze<br>8 جداول • نص<br>100 ألف خام</div></div>
+        <div class="arrow">←</div>
+        <div class="pipe silver"><div style="font-size:18px">⬡</div><b>Silver</b><div class="mono">ss_silver<br>منمّط • بلا تكرار<br>ROW_NUMBER()</div></div>
+        <div class="arrow">←</div>
+        <div class="pipe gold"><div style="font-size:18px">⬢</div><b>Gold</b><div class="mono">gg_gold<br>6 جداول<br>مفلطحة</div></div>
+      </div>
+      <div class="mini-grid">
+        <div class="mini"><div class="mono" style="font-size:10px;color:var(--muted)">GOLD: customer_360</div><b>8,000 صف</b><span class="mono">نشط 4,663 • متوقف 1,987</span></div>
+        <div class="mini"><div class="mono" style="font-size:10px;color:var(--muted)">GOLD: product_perf</div><b>500 صف</b><span class="mono">60 تحت نقطة الطلب</span></div>
+        <div class="mini"><div class="mono" style="font-size:10px;color:var(--muted)">GOLD: monthly_summary</div><b>36 شهر</b><span class="mono">2022-01 → 2024-12</span></div>
+        <div class="mini"><div class="mono" style="font-size:10px;color:var(--muted)">GOLD: marketing_perf</div><b>216 صف</b><span class="mono">6 قنوات × 36 شهر</span></div>
+      </div>
+      <div class="code mono">mysql -u you -p &lt; sql/bronze/bronze_mysql_schema.sql
+python3 sql/bronze/bronze_mysql_load.py  # 100k معاملة
+mysql -u you -p &lt; sql/silver/ss_silver_schema.sql
+mysql -u you -p &lt; sql/silver/ss_silver_load.sql
+mysql -u you -p &lt; sql/gold/gg_gold_schema.sql
+mysql -u you -p &lt; sql/gold/gg_gold_load.sql  # يعيد إنتاج كل الأرقام</div>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+        <span class="badge mono">MySQL 8.0</span><span class="badge mono">Python Pandas</span><span class="badge mono">Power BI</span><span class="badge mono">Chart.js</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section id="overview" class="container">
+  <div class="section-head">
+    <h2>دراسة الحالة <em>— لماذا هذا المشروع؟</em></h2>
+    <p>قطعة بورتفوليو تثبت امتلاك المسار كاملاً: من الاستيراد الخام → التنظيف → منطق الأعمال → ذكاء الأعمال. بيانات تركيبية ببنية مطابقة للإنتاج.</p>
+  </div>
+  <div class="grid3">
+    <div class="card feature">
+      <div class="tag tag-bronze" style="margin-bottom:8px">التحدي</div>
+      <h3>بيانات التجارة الإلكترونية الخام فوضوية</h3>
+      <p>8 ملفات CSV، أنواع غير متسقة، تكرار، منطق حالات مختلط (مكتمل / مسترجع / ملغى)، بلا مصدر واحد موثوق للوحة التحكم. كيف نجعلها قابلة للاستعلام وموثوقة؟</p>
+      <ul>
+        <li>Bronze نصّي فقط بلا تنميط</li>
+        <li>تكرار المفاتيح التجارية</li>
+        <li>تقارير التسويق ≠ حقيقة الدفتر</li>
+      </ul>
+    </div>
+    <div class="card feature">
+      <div class="tag tag-silver" style="margin-bottom:8px">الحل</div>
+      <h3>الميدالية: Bronze → Silver → Gold</h3>
+      <p>مسار SQL بدالة النافذة لإزالة التكرار، تنميط صارم، قواعد أعمال (الصالح = مكتمل + مسترجع)، و 6 مجاميع Gold مفهرسة لـ Power BI.</p>
+      <ul>
+        <li><span class="mono">ROW_NUMBER() OVER (PARTITION BY pk ORDER BY loaded_at DESC)</span></li>
+        <li>تنميط DATE / DECIMAL / INT / BOOLEAN</li>
+        <li>تاريخ المرجع = MAX(date) = 2024-12-31</li>
+      </ul>
+    </div>
+    <div class="card feature">
+      <div class="tag tag-gold" style="margin-bottom:8px">النتيجة</div>
+      <h3>جاهز لذكاء الأعمال باستعلام واحد</h3>
+      <p>6 جداول Gold تغذي كل الرسوم هنا وملف Power BI .pbix. تقطيع ذاتي حسب الشهر × الفئة × القناة، وتسرب العملاء، وصحة المخزون.</p>
+      <ul>
+        <li><span class="mono">gold_sales_monthly_summary</span> — 36 صف</li>
+        <li><span class="mono">gold_customer_360</span> — القيمة والتسرب</li>
+        <li><span class="mono">gold_inventory_status</span> — أيام التغطية</li>
+      </ul>
+    </div>
+  </div>
+  <div class="card" style="margin-top:12px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;justify-content:space-between">
+    <div>
+      <b style="font-size:13px">دوري — مطوّر بيانات متكامل</b>
+      <p style="font-size:12.5px;color:var(--muted);max-width:720px">صممت المخططات، كتبت SQL للـ Bronze/Silver/Gold، بنيت استيراد Python، حسبت المجاميع الحقيقية، وطورت واجهة البورتفوليو هذه (Chart.js، متجاوبة، قابلة للتدقيق). الواجهة تقرأ نفس منطق Gold.</p>
+    </div>
+    <div class="stack"><span class="chip">◆ ETL بـ SQL</span><span class="chip">◆ نمذجة البيانات</span><span class="chip">◆ تصور واجهات</span><span class="chip">◆ تكامل BI</span></div>
+  </div>
+</section>
+
+<section id="architecture" class="container">
+  <div class="section-head"><h2>البنية المعمارية <em>— طبقات الميدالية</em></h2><p>لكل طبقة عقد مميز يطابق <span class="mono">sql/*/*.sql</span> في المستودع.</p></div>
+  <div class="grid3">
+    <div class="card feature" style="border-right:3px solid var(--orange)">
+      <span class="tag tag-bronze">الطبقة 1 • BRONZE — bb_bronze</span>
+      <h3>◨ الهبوط الخام — استيراد كما هو</h3>
+      <p>كل CSV يُحمّل كما ورد تماماً. كل الأعمدة نص. بلا تنظيف. حفظ كامل لسلسلة النسب مع <span class="mono">_bronze_loaded_at</span>.</p>
+      <ul><li>8 جداول مطابقة لـ 8 ملفات</li><li>Python Pandas <span class="mono">bronze_mysql_load.py</span></li><li>عمود تدقيق لكل صف</li></ul>
+    </div>
+    <div class="card feature" style="border-right:3px solid #94a3b8">
+      <span class="tag tag-silver">الطبقة 2 • SILVER — ss_silver</span>
+      <h3>⬡ نظيف ومطابق</h3>
+      <p>منمّط، مقلّم، بلا تكرار. صف واحد لكل مفتاح أعمال. القاعدة: <span class="mono">status IN ('completed','refunded') = صالح</span>.</p>
+      <ul><li>تحويل للأنواع الصحيحة</li><li>إزالة تكرار بالنافذة <span class="mono">ROW_NUMBER()</span></li><li>جاهز للمفاتيح الخارجية</li></ul>
+    </div>
+    <div class="card feature" style="border-right:3px solid var(--yellow)">
+      <span class="tag tag-gold">الطبقة 3 • GOLD — gg_gold</span>
+      <h3>⬢ جاهز لـ BI — 6 جداول</h3>
+      <p>مجمع مسبقاً، مفلطح، مفهرس. يُوصل مباشرة بـ Power BI / هذه اللوحة. تاريخ المرجع <b>2024-12-31</b>.</p>
+      <ul><li>customer_360, product_perf, monthly_summary, by_category_channel, marketing_perf, inventory_status</li><li>مفهرس على (year_month, category, channel)</li></ul>
+    </div>
+  </div>
+  <div class="card" style="margin-top:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+    <span class="mono" style="font-size:11px;color:var(--muted);font-weight:700">العلاقات (حقيقية)</span>
+    <code class="mono" style="font-size:11px;background:rgba(255,255,255,.04);padding:6px 10px;border-radius:8px;border:1px solid var(--border)">عملاء 8,000 —&lt; معاملات 100,000 &gt;— منتجات 500 — مخزون 500 (1:1)  |  إنفاق تسويقي 216 (شهر+قناة)</code>
+  </div>
+</section>
+
+<section id="data" class="container">
+  <div class="section-head"><h2>8 مجموعات بيانات مصدرية <em>— أعداد الصفوف والمخطط الحقيقي</em></h2><p>كل القيم بالدولار. الأعداد <span class="mono">wc -l -1</span> من CSV الحقيقية. القاموس الكامل: <span class="mono">docs/data_dictionary.md</span>.</p></div>
+  <div class="data-grid">
+    <div class="card dataset"><div class="dataset-head"><div class="icon">👥</div><div><h4>customers.csv</h4><span class="mono" style="font-size:10.5px;color:var(--muted)">صف / عميل</span></div><span class="count">8,000</span></div><p>الملف الشخصي والولاء. يغذي <span class="mono">customer_360</span> للقيمة والتسرب.</p><div class="cols"><span>customer_id PK</span><span>الدولة</span><span>العمر</span><span>مميز 22%</span><span>تاريخ التسجيل</span></div></div>
+    <div class="card dataset"><div class="dataset-head"><div class="icon">📦</div><div><h4>products.csv</h4><span class="mono" style="font-size:10.5px;color:var(--muted)">صف / منتج</span></div><span class="count">500</span></div><p>الكتالوج • التكلفة مقابل السعر يحدد الهامش. الفئات: ملابس 114، إلكترونيات 92، منزل 85…</p><div class="cols"><span>product_id PK</span><span>الفئة</span><span>سعر البيع</span><span>التكلفة</span></div></div>
+    <div class="card dataset"><div class="dataset-head"><div class="icon">🏬</div><div><h4>inventory.csv</h4><span class="mono" style="font-size:10.5px;color:var(--muted)">صف / منتج</span></div><span class="count">500</span></div><p>لقطة 2024. متوسط المخزون 17.6 • 60 ≤ نقطة الطلب، 0 نفاد.</p><div class="cols"><span>stock_units</span><span>reorder_point</span><span>المستودع</span><span>مهلة التوريد</span></div></div>
+    <div class="card dataset"><div class="dataset-head"><div class="icon">🏭</div><div><h4>supplier_costs.csv</h4><span class="mono" style="font-size:10.5px;color:var(--muted)">منتج × مورّد</span></div><span class="count">998</span></div><p>~ موردان / منتج • أساسي، مهلة 6–28 يوم، موثوقية.</p><div class="cols"><span>supplier_name</span><span>التكلفة</span><span>أساسي 500</span></div></div>
+    <div class="card dataset"><div class="dataset-head"><div class="icon">📣</div><div><h4>marketing_spend.csv</h4><span class="mono" style="font-size:10.5px;color:var(--muted)">شهر × قناة</span></div><span class="count">216</span></div><p>36 شهر × 6 قنوات (طبيعي، مدفوع، اجتماعي، بريد، مباشر، إحالة). إنفاق $3.81M.</p><div class="cols"><span>year_month</span><span>spend_usd</span><span>roas</span><span>ctr</span></div></div>
+    <div class="card dataset"><div class="dataset-head"><div class="icon">🏷️</div><div><h4>price_history.csv</h4><span class="mono" style="font-size:10.5px;color:var(--muted)">منتج × شهر</span></div><span class="count">18,000</span></div><p>التسعير، مؤشر المنافس، المرونة، العروض والوحدات الشهرية.</p><div class="cols"><span>listed_price</span><span>سعر المنافس</span><span>ترويجي</span></div></div>
+    <div class="card dataset"><div class="dataset-head"><div class="icon">🧾</div><div><h4>transactions.csv</h4><span class="mono" style="font-size:10.5px;color:var(--muted)">صف / معاملة — FACT</span></div><span class="count" style="background:var(--accent)">100,000</span></div><p>الحقيقة • 87,825 مكتمل، 7,126 مسترجع (صالح $50.22M)، 5,049 ملغى.</p><div class="cols"><span>transaction_id PK</span><span>الكمية 220,365</span><span>الإيراد</span><span>الربح $17.01M</span></div></div>
+    <div class="card dataset"><div class="dataset-head"><div class="icon">↩️</div><div><h4>returns.csv</h4><span class="mono" style="font-size:10.5px;color:var(--muted)">صف / مرتجع</span></div><span class="count" style="background:var(--red)">7,126</span></div><p>مرتبط بالمعاملات • مسترد $3.71M، 7.5% من الطلبات الصالحة.</p><div class="cols"><span>return_id PK</span><span>transaction_id FK</span><span>السبب</span><span>المبلغ</span></div></div>
+  </div>
+</section>
+
+<section id="dashboard" class="container">
+  <div class="section-head"><h2>لوحة التحكم التفاعلية <em>— مجاميع Gold حقيقية 100%</em></h2><p>كل رسم يقرأ من منطق Gold. جرّب الفلاتر — كل الشرائح محسوبة من CSV الحقيقية.</p></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center">
+    <select id="rangeFilter" class="input" style="max-width:180px;padding:10px 12px"><option value="12">آخر 12 شهر</option><option value="36">كل 36 شهر</option><option value="6">آخر 6 أشهر</option></select>
+    <span class="badge badge-live mono"><span class="badge-dot"></span>مباشر Chart.js • مجاميع CSV حقيقية</span>
+    <span class="badge mono">تاريخ المرجع 2024-12-31</span>
+    <a class="btn btn-ghost" style="margin-right:auto;padding:8px 12px;font-size:12px" href="#gold">جداول Gold ↓</a>
+  </div>
+  <div class="chart-grid">
+    <div class="chart"><h4>الإيراد الشهري مقابل الربح (حقيقي) <span>gold_sales_monthly_summary • 2022-01 → 2024-12</span></h4><canvas id="revChart" height="240"></canvas></div>
+    <div class="chart"><h4>الإيراد حسب الفئة (حقيقي) <span>الإجمالي $50.22M • 7 فئات</span></h4><canvas id="catChart" height="240"></canvas></div>
+  </div>
+  <div class="chart-grid" style="margin-top:12px">
+    <div class="chart"><h4>التسويق: المعلن مقابل الفعلي (ديسمبر 2024) <span>gold_marketing_performance</span></h4><canvas id="mktChart" height="240"></canvas></div>
+    <div class="chart"><h4>صحة المخزون (حقيقي) <span>gold_inventory_status • 500 منتج</span></h4><canvas id="invChart" height="240"></canvas></div>
+  </div>
+  <div class="grid2" style="margin-top:12px">
+    <div class="chart"><h4>تقسيم العملاء (حقيقي) <span>gold_customer_360 • المرجع 2024-12-31</span></h4><canvas id="custChart" height="220"></canvas><div class="mono" style="font-size:10.5px;color:var(--muted);margin-top:8px;text-align:center">نشط 4,663 • معرض للخطر 1,318 • متوقف 1,987 • بلا طلبات 32</div></div>
+    <div class="chart" style="display:flex;flex-direction:column;gap:10px">
+      <h4 style="margin-bottom:2px">الإيراد حسب القناة (حقيقي) <span>6 قنوات • إجمالي المدة</span></h4>
+      <canvas id="chanChart" height="220"></canvas>
+      <div class="mono" style="font-size:10px;color:var(--muted);text-align:center">بحث طبيعي 27.8% ($13.96M) • بحث مدفوع 22.3% • بريد 14.8% • اجتماعي 18.0%</div>
+    </div>
+  </div>
+</section>
+
+<section id="gold" class="container">
+  <div class="section-head"><h2>طبقة Gold <em>— 6 جداول جاهزة لـ BI</em></h2><p>مفلطحة حسب الحبيبة المذكورة. العينات صفوف حقيقية محسوبة عبر <span class="mono">gg_gold_load.sql</span>.</p></div>
+  <div class="tabs">
+    <button class="tab active" data-tab="customer">customer_360 • 8,000</button>
+    <button class="tab" data-tab="product">product_performance • 500</button>
+    <button class="tab" data-tab="monthly">monthly_summary • 36</button>
+    <button class="tab" data-tab="marketing">marketing_perf • 216</button>
+    <button class="tab" data-tab="inventory">inventory_status • 500</button>
+  </div>
+
+  <div class="card" data-panel="customer">
+    <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center">
+      <div><b>gold_customer_360</b> <span class="mono" style="color:var(--muted);font-size:11px">• صف / عميل • الحالة: نشط ≤90 يوم / معرض ≤180 / متوقف / بلا طلبات</span></div>
+      <input class="input" style="max-width:280px" placeholder="فلترة العملاء (اسم، دولة، معرف)..." oninput="filterTable('tblCustomer',this.value)">
+    </div>
+    <div class="table-wrap" style="margin-top:10px"><table id="tblCustomer"><thead><tr><th>معرف العميل</th><th>الاسم • الدولة</th><th>الطلبات (صالح)</th><th>الوحدات • الإيراد</th><th>متوسط الطلب</th><th>مرتجعات • النسبة</th><th>آخر طلب</th><th>الحالة</th></tr></thead><tbody>
+      <tr><td class="mono">CUST01713</td><td>Elena Mueller • إيطاليا 41</td><td>1,671</td><td>3,970 • $828,918</td><td>$496.06</td><td>132 • 7.90%</td><td>2024-12-31</td><td><span class="status ok">نشط</span></td></tr>
+      <tr><td class="mono">CUST01068</td><td>Sara Rossi • أمريكا 57</td><td>876</td><td>2,258 • $538,729</td><td>$614.99</td><td>62 • 7.08%</td><td>2024-12-31</td><td><span class="status ok">نشط</span></td></tr>
+      <tr><td class="mono">CUST03000</td><td>James Jackson • إسبانيا 37</td><td>746</td><td>1,886 • $459,188</td><td>$615.53</td><td>71 • 9.52%</td><td>2024-12-29</td><td><span class="status ok">نشط</span></td></tr>
+      <tr><td class="mono">CUST05248</td><td>David Harris • إسبانيا 19</td><td>806</td><td>1,992 • $459,131</td><td>$569.64</td><td>57 • 7.07%</td><td>2024-12-28</td><td><span class="status ok">نشط</span></td></tr>
+      <tr><td class="mono">CUST01593</td><td>Anna Dubois • أمريكا 56</td><td>425</td><td>1,091 • $244,712</td><td>$575.79</td><td>32 • 7.53%</td><td>2024-12-31</td><td><span class="status ok">نشط</span></td></tr>
+      <tr><td class="mono" style="color:var(--red)">— عينة متوقفة —</td><td colspan="7" class="mono" style="color:var(--muted)">متوقف = 1,987 عميل (آخر طلب &gt;180 يوم قبل 2024-12-31) • معرض للخطر 1,318 • بلا طلبات 32</td></tr>
+    </tbody></table></div>
+    <hr class="sep"><div class="mono" style="font-size:10.5px;color:var(--muted)">SQL: ربط معاملات مجمعة لكل عميل + مرتجعات؛ الحالة CASE DATEDIFF. الحقيقي: نشط 4,663 (58.3%)، معرض 16.5%، متوقف 24.8%</div>
+  </div>
+
+  <div class="card" data-panel="product" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px"><b>gold_product_performance</b> <span class="mono" style="color:var(--muted);font-size:11px">صف / منتج • حالة المخزون: سليم / تحت نقطة الطلب</span><input class="input" style="max-width:260px" placeholder="فلترة المنتجات..." oninput="filterTable('tblProduct',this.value)"></div>
+    <div class="table-wrap" style="margin-top:10px"><table id="tblProduct"><thead><tr><th>المنتج • الاسم</th><th>الفئة</th><th>الإيراد • الهامش</th><th>الوحدات • متوسط السعر</th><th>مرتجعات %</th><th>المخزون / نقطة الطلب</th><th>الحالة</th></tr></thead><tbody>
+      <tr><td class="mono">PROD0276<br><span style="font-size:10px;color:var(--muted)">ClearView إلكترونيات 276</span></td><td>إلكترونيات</td><td>$1,896,725 • 20.35%</td><td>2,548 • $744.40</td><td>76 • 2.98%</td><td>132 / 37</td><td><span class="status ok">سليم</span></td></tr>
+      <tr><td class="mono">PROD0055<br><span style="font-size:10px;color:var(--muted)">ZenLife ملابس 55</span></td><td>ملابس</td><td>$1,170,647 • 52.42%</td><td>6,552 • $178.67</td><td>217 • 3.31%</td><td>468 / 95</td><td><span class="status ok">سليم</span></td></tr>
+      <tr><td class="mono">PROD0216<br><span style="font-size:10px;color:var(--muted)">CoreBrand إلكترونيات 216</span></td><td>إلكترونيات</td><td>$881,478 • 20.31%</td><td>786 • $1,121</td><td>31 • 3.94%</td><td>7 / 11</td><td><span class="status warn">تحت الطلب</span></td></tr>
+      <tr><td class="mono">PROD0467<br><span style="font-size:10px;color:var(--muted)">FunZone منزل 467</span></td><td>منزل ومطبخ</td><td>$483,769 • 36.37%</td><td>1,602 • $301.98</td><td>46 • 2.87%</td><td>21 / 23</td><td><span class="status warn">تحت الطلب</span></td></tr>
+      <tr><td class="mono">PROD0008<br><span style="font-size:10px;color:var(--muted)">PrimeLine جمال 8</span></td><td>جمال وصحة</td><td>$2,559 • 57.23%</td><td>239 • $10.71</td><td>9 • 3.77%</td><td>3 / 3</td><td><span class="status warn">تحت الطلب</span></td></tr>
+    </tbody></table></div>
+    <div class="mono" style="font-size:10.5px;color:var(--muted);margin-top:8px">مرتب حسب الإيراد الحقيقي تنازلياً • PROD0276 الأول • 440 سليم، 60 تحت الطلب، 0 نفاد</div>
+  </div>
+
+  <div class="card" data-panel="monthly" style="display:none">
+    <b>gold_sales_monthly_summary</b> <span class="mono" style="color:var(--muted);font-size:11px">• صف / شهر • 36 شهر • المتوسط = الإيراد / الطلبات الصالحة</span>
+    <div class="table-wrap" style="margin-top:10px"><table><thead><tr><th>الشهر</th><th>مكتمل</th><th>ملغى</th><th>مسترجع</th><th>الوحدات</th><th>الإيراد</th><th>الربح</th><th>المتوسط</th><th>العملاء</th></tr></thead><tbody>
+      <tr><td class="mono">2024-07</td><td>2,408</td><td>146</td><td>192</td><td>6,027</td><td>$1,349,703</td><td>$455,613</td><td>$519.12</td><td>1,803</td></tr>
+      <tr><td class="mono">2024-08</td><td>2,345</td><td>126</td><td>202</td><td>5,922</td><td>$1,358,682</td><td>$462,764</td><td>$533.44</td><td>1,753</td></tr>
+      <tr><td class="mono">2024-09</td><td>2,413</td><td>152</td><td>168</td><td>6,238</td><td>$1,400,316</td><td>$482,997</td><td>$542.55</td><td>1,766</td></tr>
+      <tr><td class="mono">2024-10</td><td>2,590</td><td>161</td><td>209</td><td>6,492</td><td>$1,493,351</td><td>$508,431</td><td>$533.53</td><td>1,926</td></tr>
+      <tr><td class="mono">2024-11</td><td>3,381</td><td>197</td><td>268</td><td>8,482</td><td>$1,933,448</td><td>$660,437</td><td>$529.86</td><td>2,335</td></tr>
+      <tr style="background:rgba(16,185,129,.07)"><td class="mono"><b>2024-12</b></td><td><b>3,903</b></td><td>233</td><td>338</td><td>9,831</td><td><b>$2,110,610</b></td><td><b>$726,136</b></td><td>$497.67</td><td>2,618</td></tr>
+    </tbody></table></div>
+    <div class="mono" style="font-size:10.5px;color:var(--muted);margin-top:6px">الصالح = مكتمل + مسترجع • قفزة العطلات نوفمبر→ديسمبر: +9.2% إيراد، +15.9% وحدات، المتوسط ينخفض بسبب المزيج الترويجي</div>
+  </div>
+
+  <div class="card" data-panel="marketing" style="display:none">
+    <b>gold_marketing_performance</b> <span class="mono" style="color:var(--muted);font-size:11px">المعلن مقابل الفعلي • مبالغة منهجية</span>
+    <div class="table-wrap" style="margin-top:10px"><table><thead><tr><th>الشهر</th><th>القناة</th><th>الإنفاق</th><th>العائد (معلن)</th><th>إيراد معلن</th><th>إيراد فعلي</th><th>الفرق</th></tr></thead><tbody>
+      <tr><td class="mono">2024-12</td><td>بحث طبيعي</td><td>$9,677</td><td>63.88×</td><td>$618,181</td><td>$588,758</td><td style="color:var(--red)">-4.76%</td></tr>
+      <tr><td class="mono">2024-12</td><td>بحث مدفوع</td><td>$87,470</td><td>5.40×</td><td>$472,127</td><td>$453,742</td><td style="color:var(--red)">-3.89%</td></tr>
+      <tr><td class="mono">2024-12</td><td>تواصل اجتماعي</td><td>$62,401</td><td>6.39×</td><td>$398,850</td><td>$380,869</td><td style="color:var(--red)">-4.51%</td></tr>
+      <tr><td class="mono">2024-12</td><td>بريد إلكتروني</td><td>$5,178</td><td>61.69×</td><td>$319,396</td><td>$300,878</td><td style="color:var(--red)">-5.80%</td></tr>
+      <tr><td class="mono">2024-12</td><td>مباشر</td><td>$1,776</td><td>129.55×</td><td>$230,124</td><td>$213,615</td><td style="color:var(--red)">-7.17%</td></tr>
+      <tr><td class="mono">2024-12</td><td>إحالة</td><td>$15,576</td><td>11.75×</td><td>$182,940</td><td>$172,749</td><td style="color:var(--red)">-5.57%</td></tr>
+    </tbody></table></div>
+    <div class="mono" style="font-size:10.5px;color:var(--muted);margin-top:6px">الفعلي = ربط المعاملات على الشهر+القناة (صالح فقط). كل القنوات سالبة: المنصات تبلغ 3.9–7.2% أعلى من الدفتر.</div>
+  </div>
+
+  <div class="card" data-panel="inventory" style="display:none">
+    <b>gold_inventory_status</b> <span class="mono" style="color:var(--muted);font-size:11px">صف / منتج • أيام التغطية = المخزون / متوسط يومي 90 يوم (2024-10-02 → 2024-12-31)</span>
+    <div class="table-wrap" style="margin-top:10px"><table><thead><tr><th>المنتج • الفئة</th><th>المستودع</th><th>المخزون / نقطة الطلب</th><th>مهلة التوريد</th><th>متوسط يومي 90 يوم</th><th>أيام التغطية</th><th>الحالة</th></tr></thead><tbody>
+      <tr><td class="mono">PROD0001 كتب</td><td>US-West</td><td>16 / 4</td><td>16</td><td>0.344</td><td>46.5</td><td><span class="status ok">سليم</span></td></tr>
+      <tr><td class="mono">PROD0216 إلكترونيات</td><td>—</td><td>7 / 11</td><td>8</td><td>0.489</td><td>14.3</td><td><span class="status warn">تحت الطلب</span></td></tr>
+      <tr><td class="mono">PROD0008 جمال وصحة</td><td>US-West</td><td>3 / 3</td><td>7</td><td>0.200</td><td>15.0</td><td><span class="status warn">تحت الطلب</span></td></tr>
+      <tr><td class="mono">PROD0467 منزل ومطبخ</td><td>—</td><td>21 / 23</td><td>6</td><td>0.711</td><td>29.5</td><td><span class="status warn">تحت الطلب</span></td></tr>
+    </tbody></table></div>
+    <div class="mono" style="font-size:10.5px;color:var(--muted);margin-top:6px">الأعداد الحقيقية: سليم 440، تحت الطلب 60، نفاد 0 • محسوب من سرعة 90 يوم • يطابق gg_gold_load.sql</div>
+  </div>
+</section>
+
+<section id="insights" class="container">
+  <div class="section-head"><h2>الرؤى الأساسية <em>— ماذا تقول البيانات</em></h2><p>استنتاجات أعمال مشتقة حصراً من مجاميع Gold — جاهزة لعرض أصحاب المصلحة.</p></div>
+  <div class="grid2">
+    <div class="card" style="display:flex;flex-direction:column;gap:12px">
+      <div class="insight"><h4>📈 موسمية قوية: ذروة العطلات نوفمبر–ديسمبر</h4><p>2024-11 $1.93M → 2024-12 $2.11M (+9.2% إيراد، +15.9% وحدات، عملاء 2,335→2,618). المتوسط ينخفض $530→$498 بسبب المزيج الترويجي (راجع <span class="mono">price_history.is_promotional</span>). خطط للمخزون وميزانية الإعلانات لطفرة الربع الرابع.</p></div>
+      <div class="insight"><h4>💸 كل قناة تسويق تبلغ أكثر 4–7%</h4><p>فرق ديسمبر 2024: طبيعي −4.76%، مدفوع −3.89%، بريد −5.80%، مباشر −7.17%. Gold يطابق العائد المعلن مقابل حقيقة الدفتر — حاسم لإعادة توزيع الإنفاق على <b>الإيراد الفعلي</b> لا إسناد المنصة.</p></div>
+      <div class="insight"><h4>↩️ المرتجعات 7.5% — موحدة، ليست منحازة للملابس</h4><p>7,126 مرتجع / 94,951 صالح = 7.50%، مسترد $3.71M. معدلات المنتجات تتجمع 3–4% (PROD0276 2.98%، PROD0055 3.31%) — يوحي بمولّد تركيبي، ليس انحياز فئة حقيقية.</p></div>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;gap:12px">
+      <div class="insight"><h4>📦 المخزون: 60 منتج تحت نقطة الطلب، 0 نفاد — استباقي</h4><p>سليم 440/500 (88%). مثال: PROD0216 7/11 (مهلة 8 يوم، تغطية 14.3 يوم)، PROD0008 3/3 (15 يوم). الطلب التالي قابل للحساب من سرعة 90 يوم (<span class="mono">days_of_supply = stock / avg_daily_90d</span>).</p></div>
+      <div class="insight"><h4>👥 تركيز القيمة — التكرار أهم من علامة مميز</h4><p>أعلى عميل CUST01713 $828k قيمة (1,671 طلب) مقابل متوسط ~$5k. علامة مميز (22%) ليست أقوى مؤشر؛ تكرار الشراء هو. نشط 58.3% (4,663) — ركز على استبقاء المعرضين 1,318 قبل التوقف.</p></div>
+      <div class="insight"><h4>🏷️ مزيج الفئات: الإلكترونيات تهيمن بهامش منخفض</h4><p>إلكترونيات $23.17M (46.1%) بهامش 20% مقابل ملابس $8.40M (16.7%) بهامش 52%. سعر الوحدة العالي ≠ ربح عالي — وجّه الترويج للفئات عالية الهامش.</p></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <h3 style="font-size:13px;margin-bottom:8px">التوصيات — الخطوات القادمة</h3>
+    <div class="grid3">
+      <div><b style="font-size:12px;color:var(--accent)">1. أعد توزيع التسويق على الفعلي</b><p style="font-size:12px;color:var(--muted)">قلل تفاؤل المباشر/الاجتماعي ~5%؛ انقل الميزانية للبحث الطبيعي (فعلي $588k لا يزال الأعلى) والمدفوع حيث الفرق الأصغر.</p></div>
+      <div><b style="font-size:12px;color:var(--green)">2. أتمتة تنبيهات إعادة الطلب</b><p style="font-size:12px;color:var(--muted)">جدولة فحص يومي لـ <span class="mono">gold_inventory_status</span> — أطلق أمر شراء عند <span class="mono">days_of_supply &lt; lead_time + 7</span>. يغطي 60 منتج معرض اليوم.</p></div>
+      <div><b style="font-size:12px;color:var(--orange)">3. استعادة شريحة المعرض للخطر</b><p style="font-size:12px;color:var(--muted)">1,318 معرض للخطر (91–180 يوم خامل) — بريد مستهدف بحزم ملابس/منزل عالية الهامش؛ معدل إرجاع أقل وهامش أعلى.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="container">
+  <div class="grid2">
+    <div class="card">
+      <h3 style="font-size:13px;margin-bottom:8px">التقنيات وكيف يُحسب Gold</h3>
+      <div class="stack">
+        <span class="chip">🗄️ MySQL 8.0 • دوال النافذة</span>
+        <span class="chip">🐍 Python Pandas</span>
+        <span class="chip">📊 Power BI .pbix → gg_gold</span>
+        <span class="chip">📐 8 ملفات • 100 ألف</span>
+        <span class="chip">◈ 6 جداول Gold • مفهرسة</span>
+      </div>
+      <hr class="sep">
+      <ul style="font-size:12.5px;color:var(--muted);padding-right:16px;line-height:1.7">
+        <li><b style="color:var(--text)">المبيعات الصالحة</b> = الحالة IN ('completed','refunded'); ملغى (5,049) مستبعد</li>
+        <li><b style="color:var(--text)">@ref_date = MAX(date) = 2024-12-31</b> — بدّل إلى CURDATE() للتغذية الحية</li>
+        <li><b style="color:var(--text)">حالة العميل:</b> الفرق ≤90 نشط، ≤180 معرض، وإلا متوقف؛ 32 بلا طلب → بلا طلبات</li>
+        <li><b style="color:var(--text)">السرعة:</b> SUM(quantity)/90 حيث التاريخ &gt; @ref_date − 90 يوم → أيام التغطية</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 style="font-size:13px;margin-bottom:8px">كيف تعيد الإنتاج — نفس الأرقام محلياً</h3>
+      <div class="code mono"># 1) Bronze — تحميل CSV الخام<br>mysql -u you -p &lt; sql/bronze/bronze_mysql_schema.sql<br>python3 sql/bronze/bronze_mysql_load.py  # 100 ألف<br><br># 2) Silver — تنظيف وإزالة تكرار<br>mysql -u you -p &lt; sql/silver/ss_silver_schema.sql<br>mysql -u you -p &lt; sql/silver/ss_silver_load.sql<br><br># 3) Gold — تجميع (يعيد كل الرسوم)<br>mysql -u you -p &lt; sql/gold/gg_gold_schema.sql<br>mysql -u you -p &lt; sql/gold/gg_gold_load.sql<br><br># 4) SELECT * FROM gg_gold.gold_sales_monthly_summary; -- 36 صف</div>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+        <a class="btn btn-primary" href="https://github.com/Hamed7848/E-commerce-supply-chain" target="_blank">استنساخ المستودع</a>
+        <a class="btn btn-ghost mono" href="https://raw.githubusercontent.com/Hamed7848/E-commerce-supply-chain/main/data%20raw/transactions.csv" target="_blank">transactions.csv الخام</a>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:12px;background:linear-gradient(135deg,rgba(16,185,129,.10),rgba(59,130,246,.08));border-color:rgba(16,185,129,.30)">
+    <div style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center">
+      <div>
+        <h3 style="font-size:14px">بيان التحقق — جاهز للمقابلة</h3>
+        <p style="color:var(--muted);font-size:12px;max-width:700px;margin-top:6px">كل المؤشرات والرسوم وعينات Gold في هذه الصفحة مجاميع لـ <b style="color:var(--text)">8 ملفات CSV الحقيقية في <span class="mono">data raw/</span></b> (8,000 عميل، 500 منتج، 100,000 معاملة...). بلا قيم وهمية. محسوبة بنفس قواعد <span class="mono">sql/gold/gg_gold_load.sql</span>. افتح عرض المصدر وابحث REAL_DATA للتدقيق.</p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><span class="badge" style="background:rgba(16,185,129,.15);color:var(--green);border-color:rgba(16,185,129,.3)">بلا بيانات وهمية</span><span class="badge">تم التحقق من العد</span><span class="badge">منطق Gold مطابق</span></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container" style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center">
+    <div>صفحة بورتفوليو لـ <a href="https://github.com/Hamed7848/E-commerce-supply-chain" target="_blank" style="color:var(--accent);text-decoration:underline">Hamed7848/E-commerce-supply-chain</a> • MIT • <span class="mono">portfolio.html — نشر بملف واحد</span> • البيانات 2022-01-01 → 2024-12-31</div>
+    <div class="mono">© 2026 • التدقيق: عرض المصدر → REAL_DATA</div>
+  </div>
+</footer>
+
+<script>
+const REAL_DATA={
+  kpis:{total_rev:50223034.95,valid_orders:94951,completed:87825,cancelled:5049,refunded:7126,total_units:220365,margin:33.87,aov:528.94,total_returns:7126,refunded_usd:3714216.25,return_rate:7.5,spend:3813593.08,reported_rev:52871960.04,roas_actual:13.17,stock_below:60,healthy:440},
+  monthly:[
+    {ym:'2022-01',rev:999827.79,profit:340971.41},{ym:'2022-02',rev:819751.48,profit:281213.53},{ym:'2022-03',rev:1228955.47,profit:417102.29},
+    {ym:'2022-04',rev:1375112.32,profit:449223.81},{ym:'2022-05',rev:1299087.16,profit:447398.64},{ym:'2022-06',rev:1275245.15,profit:430117.98},
+    {ym:'2022-07',rev:1476462.23,profit:497952.15},{ym:'2022-08',rev:1302418.7,profit:446130.98},{ym:'2022-09',rev:1358664.53,profit:459138.58},
+    {ym:'2022-10',rev:1487823.32,profit:503030.89},{ym:'2022-11',rev:1963329.98,profit:651986.32},{ym:'2022-12',rev:2193555.24,profit:753188.67},
+    {ym:'2023-01',rev:1049933.29,profit:358574.22},{ym:'2023-02',rev:891506.13,profit:295668.8},{ym:'2023-03',rev:1120260.68,profit:379177.14},
+    {ym:'2023-04',rev:1152016.9,profit:393669.06},{ym:'2023-05',rev:1328601.43,profit:455046.2},{ym:'2023-06',rev:1281274.91,profit:428891.85},
+    {ym:'2023-07',rev:1422002.08,profit:472705.71},{ym:'2023-08',rev:1315048.66,profit:452889.03},{ym:'2023-09',rev:1385403.38,profit:474954.71},
+    {ym:'2023-10',rev:1558629.91,profit:514737.43},{ym:'2023-11',rev:1892850.08,profit:626938.47},{ym:'2023-12',rev:2298695.93,profit:780228.92},
+    {ym:'2024-01',rev:1010217.95,profit:341635.5},{ym:'2024-02',rev:928706.45,profit:311872.65},{ym:'2024-03',rev:1252805.08,profit:429966.17},
+    {ym:'2024-04',rev:1279437.99,profit:427731.21},{ym:'2024-05',rev:1349102.84,profit:462841.87},{ym:'2024-06',rev:1280199.81,profit:427442.84},
+    {ym:'2024-07',rev:1349702.89,profit:455613.39},{ym:'2024-08',rev:1358681.6,profit:462764.28},{ym:'2024-09',rev:1400315.66,profit:482996.89},
+    {ym:'2024-10',rev:1493350.73,profit:508430.76},{ym:'2024-11',rev:1933447.57,profit:660437.43},{ym:'2024-12',rev:2110609.63,profit:726136.08}
+  ],
+  categories:{labels:['إلكترونيات','ملابس','رياضة ونزهات','منزل ومطبخ','جمال وصحة','ألعاب','كتب'],labels_en:['Electronics','Clothing','Sports & Outdoors','Home & Kitchen','Beauty & Health','Toys & Games','Books'],data:[23169655.16,8400512.96,7332092.33,6780299.51,2533756.7,1341943.09,664775.2]},
+  channel:{labels:['بحث طبيعي','بحث مدفوع','تواصل اجتماعي','بريد إلكتروني','مباشر','إحالة'],labels_en:['organic_search','paid_search','social_media','email','direct','referral'],data:[13958057.71,11184231.01,9047670.36,7414255.31,5015650.23,3603170.33]},
+  marketing_2024_12:{labels:['بحث طبيعي','بحث مدفوع','تواصل','بريد','مباشر','إحالة'],labels_en:['organic_search','paid_search','social_media','email','direct','referral'],spend:[9677.47,87469.67,62400.99,5177.58,1776.29,15575.86],reported:[618181.4,472126.62,398849.69,319395.52,230124.38,182939.59],actual:[588757.72,453742.0,380868.62,300877.5,213615.05,172748.74]},
+  inventory:{healthy:440,below:60,stockout:0},
+  customer:{labels:['نشط','معرض للخطر','متوقف','بلا طلبات'],labels_en:['Active','At Risk','Churned','No Orders'],data:[4663,1318,1987,32]}
+};
+function filterTable(id,q){
+  q=(q||'').toLowerCase();
+  document.querySelectorAll('#'+id+' tbody tr').forEach(tr=>{
+    tr.style.display=tr.textContent.toLowerCase().includes(q)?'':'none';
+  });
+}
+document.querySelectorAll('.tab').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const tab=btn.dataset.tab;
+    document.querySelectorAll('[data-panel]').forEach(p=>p.style.display=p.dataset.panel===tab?'':'none');
+  });
+});
+let revChart;
+function renderRev(range){
+  const months=REAL_DATA.monthly.slice(-range);
+  const labels=months.map(m=>m.ym);
+  const rev=months.map(m=>m.rev);
+  const profit=months.map(m=>m.profit);
+  if(revChart) revChart.destroy();
+  revChart=new Chart(document.getElementById('revChart'),{
+    type:'line',
+    data:{labels,datasets:[
+      {label:'الإيراد',data:rev,borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,.14)',tension:.33,fill:true,pointRadius:2,borderWidth:2},
+      {label:'الربح',data:profit,borderColor:'#10b981',backgroundColor:'rgba(16,185,129,.10)',tension:.33,fill:true,pointRadius:2,borderWidth:2}
+    ]},
+    options:{responsive:true,plugins:{legend:{labels:{color:'#8ea0c2',font:{size:11},font:{family:'Tajawal'}}}},scales:{x:{ticks:{color:'#8ea0c2',maxRotation:50},grid:{color:'rgba(31,42,68,.45)'}},y:{ticks:{color:'#8ea0c2',callback:v=>'$'+(v/1000000).toFixed(1)+'M'},grid:{color:'rgba(31,42,68,.45)'}}}}
+  });
+}
+renderRev(12);
+document.getElementById('rangeFilter').addEventListener('change',e=>renderRev(parseInt(e.target.value)));
+new Chart(document.getElementById('catChart'),{
+  type:'doughnut',
+  data:{labels:REAL_DATA.categories.labels,datasets:[{data:REAL_DATA.categories.data,backgroundColor:['#3b82f6','#06b6d4','#8b5cf6','#f59e0b','#10b981','#ef4444','#94a3b8'],borderWidth:0}]},
+  options:{responsive:true,plugins:{legend:{position:'bottom',labels:{color:'#8ea0c2',font:{size:11,family:'Tajawal'},padding:12,usePointStyle:true}},tooltip:{callbacks:{label:ctx=>ctx.label+': $'+(ctx.parsed/1000000).toFixed(2)+'M ('+(ctx.parsed/50223034.95*100).toFixed(1)+'%)'}}},cutout:'58%'}
+});
+new Chart(document.getElementById('mktChart'),{
+  type:'bar',
+  data:{labels:REAL_DATA.marketing_2024_12.labels,datasets:[
+    {label:'الإنفاق',data:REAL_DATA.marketing_2024_12.spend,backgroundColor:'rgba(239,68,68,.85)',borderRadius:6},
+    {label:'إيراد معلن',data:REAL_DATA.marketing_2024_12.reported,backgroundColor:'rgba(59,130,246,.85)',borderRadius:6},
+    {label:'إيراد فعلي',data:REAL_DATA.marketing_2024_12.actual,backgroundColor:'rgba(16,185,129,.85)',borderRadius:6}
+  ]},
+  options:{responsive:true,plugins:{legend:{labels:{color:'#8ea0c2',font:{size:11,family:'Tajawal'}}}},scales:{x:{ticks:{color:'#8ea0c2',font:{size:10,family:'Tajawal'}},grid:{display:false}},y:{ticks:{color:'#8ea0c2',callback:v=>'$'+(v/1000).toFixed(0)+'k'},grid:{color:'rgba(31,42,68,.35)'}}}}
+});
+new Chart(document.getElementById('invChart'),{
+  type:'doughnut',
+  data:{labels:['سليم','تحت نقطة الطلب','نفاد'],datasets:[{data:[REAL_DATA.inventory.healthy,REAL_DATA.inventory.below,REAL_DATA.inventory.stockout],backgroundColor:['#10b981','#f59e0b','#ef4444'],borderWidth:0}]},
+  options:{responsive:true,plugins:{legend:{position:'bottom',labels:{color:'#8ea0c2',font:{size:11,family:'Tajawal'},usePointStyle:true}}},cutout:'62%'}
+});
+new Chart(document.getElementById('custChart'),{
+  type:'doughnut',
+  data:{labels:REAL_DATA.customer.labels,datasets:[{data:REAL_DATA.customer.data,backgroundColor:['#10b981','#f59e0b','#ef4444','#475569'],borderWidth:0}]},
+  options:{responsive:true,plugins:{legend:{position:'bottom',labels:{color:'#8ea0c2',font:{size:11,family:'Tajawal'},usePointStyle:true}},tooltip:{callbacks:{label:ctx=>ctx.label+': '+ctx.parsed+' ('+(ctx.parsed/8000*100).toFixed(1)+'%)'}}},cutout:'60%'}
+});
+new Chart(document.getElementById('chanChart'),{
+  type:'bar',
+  data:{labels:REAL_DATA.channel.labels,datasets:[{label:'الإيراد',data:REAL_DATA.channel.data,backgroundColor:['#3b82f6','#8b5cf6','#06b6d4','#10b981','#f59e0b','#ef4444'],borderRadius:8}]},
+  options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>'$'+(ctx.parsed.x/1000000).toFixed(2)+'M'}}},scales:{x:{ticks:{color:'#8ea0c2',callback:v=>'$'+(v/1000000).toFixed(1)+'M'},grid:{color:'rgba(31,42,68,.35)'}},y:{ticks:{color:'#8ea0c2',font:{size:11,family:'Tajawal'}},grid:{display:false}}}}
+});
+</script>
+</body>
+</html>

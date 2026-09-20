@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>E-Commerce Supply Chain — Data Analysis Portfolio Case Study</title>
+<meta name="description" content="Full-stack portfolio case study: E-commerce supply chain medallion pipeline (Bronze→Silver→Gold). 100k transactions, $50.2M revenue, 6 Gold tables, interactive dashboard — 100% real CSV data.">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#070a12; --bg2:#0d111d; --card:#111827; --card2:#151e32; --border:#1f2a44; --border2:#243353;
+  --text:#e8eefc; --muted:#8ea0c2; --muted2:#6b7fa3;
+  --accent:#3b82f6; --accent2:#06b6d4; --accent3:#8b5cf6;
+  --green:#10b981; --orange:#f59e0b; --red:#ef4444; --yellow:#fbbf24;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.65;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+.mono{font-family:'JetBrains Mono',monospace}
+.container{max-width:1200px;margin:0 auto;padding:0 24px}
+nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(18px);background:rgba(7,10,18,.78);border-bottom:1px solid var(--border)}
+.nav-inner{height:66px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.logo{display:flex;align-items:center;gap:12px;font-weight:800;letter-spacing:.01em}
+.logo-mark{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;font-weight:800;color:white;font-size:15px;box-shadow:0 8px 20px rgba(59,130,246,.35)}
+.nav-links{display:flex;gap:6px;align-items:center}
+.nav-links a{font-size:13px;color:var(--muted);font-weight:500;padding:8px 12px;border-radius:8px;transition:.15s}
+.nav-links a:hover{color:var(--text);background:rgba(255,255,255,.06)}
+.btn{padding:11px 18px;border-radius:11px;font-weight:650;font-size:13px;display:inline-flex;align-items:center;gap:8px;cursor:pointer;border:1px solid transparent;transition:.2s;white-space:nowrap}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;box-shadow:0 10px 28px rgba(59,130,246,.35)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 14px 32px rgba(59,130,246,.45)}
+.btn-ghost{border-color:var(--border);background:rgba(255,255,255,.04);color:var(--text)}
+.btn-ghost:hover{background:rgba(255,255,255,.08)}
+.badge{font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.03);color:var(--muted);font-weight:700}
+.badge-dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;box-shadow:0 0 10px var(--green);margin-right:6px;vertical-align:middle}
+.badge-live{border-color:rgba(16,185,129,.35);background:rgba(16,185,129,.12);color:#6ee7b7}
+.hero{padding:36px 0 24px;position:relative;overflow:hidden}
+.hero::before{content:"";position:absolute;inset:0;background:radial-gradient(600px 400px at 70% -10%, rgba(59,130,246,.18), transparent 60%), radial-gradient(500px 500px at 0% 20%, rgba(139,92,246,.14), transparent 60%);pointer-events:none}
+.hero-grid{display:grid;grid-template-columns:1.2fr .9fr;gap:32px;align-items:start;position:relative}
+@media(max-width:980px){.hero-grid{grid-template-columns:1fr}}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--green);font-weight:800;margin-bottom:12px}
+.eyebrow span{background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3);padding:4px 8px;border-radius:999px}
+.hero h1{font-family:'Plus Jakarta Sans',Inter,sans-serif;font-size:44px;line-height:.95;letter-spacing:-.035em;font-weight:800}
+.hero h1 span{background:linear-gradient(135deg,#60a5fa,#22d3ee,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+@media(max-width:600px){.hero h1{font-size:32px}}
+.hero p{color:var(--muted);font-size:15px;margin:16px 0 18px;max-width:640px;line-height:1.7}
+.hero p b{color:var(--text)}
+.kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:22px 0}
+@media(max-width:900px){.kpi-strip{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:500px){.kpi-strip{grid-template-columns:1fr}}
+.kpi{background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.01));border:1px solid var(--border);border-radius:16px;padding:14px 14px 12px;position:relative;overflow:hidden}
+.kpi::before{content:"";position:absolute;inset:0 0 auto 0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2));opacity:.9}
+.kpi label{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.kpi strong{font-size:22px;display:block;margin:6px 0 2px;letter-spacing:-.02em}
+.kpi small{font-size:12px;color:var(--muted);line-height:1.4;display:block}
+.kpi .trend{font-size:11.5px;font-weight:700;margin-top:6px}
+.trend.up{color:var(--green)}.trend.mid{color:var(--muted)}.trend.warn{color:var(--orange)}
+.proof{margin:16px 0;background:linear-gradient(135deg,rgba(16,185,129,.12),rgba(59,130,246,.08));border:1px solid rgba(16,185,129,.32);border-radius:14px;padding:12px 14px;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.proof code{background:rgba(255,255,255,.06);padding:2px 6px;border-radius:6px;border:1px solid var(--border);font-size:11px}
+.hero-card{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.01));border:1px solid var(--border);border-radius:20px;padding:18px;box-shadow:0 20px 60px rgba(0,0,0,.45);backdrop-filter:blur(10px)}
+.pipeline{display:flex;align-items:center;gap:8px;margin:14px 0}
+.pipe{flex:1;text-align:center;padding:14px 6px;border-radius:14px;border:1px solid var(--border);background:var(--card);font-size:11.5px;line-height:1.4}
+.pipe.bronze{border-color:rgba(245,158,11,.45);background:linear-gradient(180deg,rgba(245,158,11,.14),rgba(245,158,11,.02))}
+.pipe.silver{border-color:rgba(148,163,184,.35);background:linear-gradient(180deg,rgba(148,163,184,.12),rgba(148,163,184,.02))}
+.pipe.gold{border-color:rgba(251,191,36,.45);background:linear-gradient(180deg,rgba(251,191,36,.16),rgba(245,158,11,.03))}
+.arrow{color:var(--muted);font-size:18px}
+.mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.mini{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px}
+.mini b{font-size:12px}.mini span{font-size:11px;color:var(--muted);display:block}
+.code{background:#0d1117;border:1px solid var(--border);border-radius:12px;padding:12px;font-size:11px;color:#8ea0c2;overflow:auto;line-height:1.65}
+section{padding:36px 0;border-top:1px solid rgba(31,42,68,.6)}
+.section-head{display:flex;justify-content:space-between;gap:16px;align-items:end;flex-wrap:wrap;margin-bottom:18px}
+.section-head h2{font-size:26px;letter-spacing:-.02em;font-weight:800}
+.section-head h2 em{font-style:normal;color:var(--muted);font-weight:600}
+.section-head p{color:var(--muted);font-size:13.5px;max-width:620px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:960px){.grid3,.grid2,.grid4{grid-template-columns:1fr}}
+.feature{padding:16px}
+.feature h3{font-size:14px;margin-bottom:6px}
+.feature p{font-size:13px;color:var(--muted);line-height:1.6}
+.feature ul{margin-top:8px;padding-left:16px;font-size:12.5px;color:var(--muted);line-height:1.6}
+.tag{font-size:10px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;padding:4px 8px;border-radius:999px;border:1px solid}
+.tag-bronze{color:var(--orange);border-color:rgba(245,158,11,.35);background:rgba(245,158,11,.12)}
+.tag-silver{color:#cbd5e1;border-color:rgba(203,213,225,.25);background:rgba(203,213,225,.08)}
+.tag-gold{color:var(--yellow);border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.12)}
+.data-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:1100px){.data-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.data-grid{grid-template-columns:1fr}}
+.dataset{padding:14px;display:flex;flex-direction:column;gap:8px}
+.dataset-head{display:flex;align-items:center;gap:10px}
+.icon{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;font-size:16px;background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.25);flex-shrink:0}
+.dataset h4{font-size:13px}
+.dataset p{font-size:12px;color:var(--muted);line-height:1.5}
+.cols{display:flex;flex-wrap:wrap;gap:5px}
+.cols span{background:rgba(255,255,255,.04);border:1px solid var(--border);padding:3px 7px;border-radius:999px;font-size:10.5px;color:var(--muted)}
+.count{margin-left:auto;background:var(--green);color:white;font-size:10px;padding:3px 8px;border-radius:999px;font-weight:800}
+.chart-grid{display:grid;grid-template-columns:1.6fr .9fr;gap:12px}
+@media(max-width:960px){.chart-grid{grid-template-columns:1fr}}
+.chart{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px}
+.chart h4{font-size:12.5px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.chart h4 span{font-size:10.5px;color:var(--muted);font-weight:500}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.tab{padding:8px 14px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.03);font-size:12px;font-weight:650;color:var(--muted);cursor:pointer;transition:.15s}
+.tab.active{background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;border-color:transparent;box-shadow:0 6px 18px rgba(59,130,246,.35)}
+.table-wrap{overflow:auto;border:1px solid var(--border);border-radius:12px;background:var(--card)}
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:760px}
+th{text-align:left;padding:10px 11px;background:rgba(255,255,255,.03);color:var(--muted);font-size:10px;letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:10px 11px;border-bottom:1px solid rgba(31,42,68,.5)}
+tr:hover td{background:rgba(255,255,255,.02)}
+.status{padding:3px 8px;border-radius:999px;font-size:11px;font-weight:700;border:1px solid;white-space:nowrap}
+.status.ok{color:var(--green);border-color:rgba(16,185,129,.3);background:rgba(16,185,129,.11)}
+.status.warn{color:var(--orange);border-color:rgba(245,158,11,.32);background:rgba(245,158,11,.11)}
+.status.bad{color:var(--red);border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.11)}
+.input{padding:9px 11px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.03);color:var(--text);font-size:12px;outline:none;width:100%}
+.input:focus{border-color:var(--accent)}
+.insight{border-left:3px solid var(--accent);padding:8px 12px;background:rgba(59,130,246,.06);border-radius:0 10px 10px 0}
+.insight h4{font-size:12.5px;margin-bottom:3px}
+.insight p{font-size:12px;color:var(--muted);line-height:1.55}
+.stack{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:var(--card);font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px}
+footer{border-top:1px solid var(--border);padding:24px 0;color:var(--muted);font-size:12px}
+hr.sep{border:none;border-top:1px solid var(--border);margin:12px 0}
+</style>
+</head>
+<body>
+<nav>
+  <div class="container nav-inner">
+    <div class="logo"><div class="logo-mark">◈</div> <span>Portfolio<span style="color:var(--muted);font-weight:600"> / E-Commerce Supply Chain</span></span> <span class="badge badge-live" style="margin-left:8px"><span class="badge-dot"></span>Live Data</span></div>
+    <div class="nav-links">
+      <a href="#overview">Overview</a>
+      <a href="#architecture">Pipeline</a>
+      <a href="#data">Data</a>
+      <a href="#dashboard">Dashboard</a>
+      <a href="#insights">Insights</a>
+      <a href="https://github.com/Hamed7848/E-commerce-supply-chain" target="_blank" style="border:1px solid var(--border);background:rgba(255,255,255,.04)">GitHub ↗</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero container">
+  <div class="hero-grid">
+    <div>
+      <div class="eyebrow"><span>◆ Data Analysis Portfolio — Case Study 01</span> <span class="mono" style="color:var(--muted);font-size:11px;letter-spacing:.04em;text-transform:none">Bronze → Silver → Gold • Medallion Architecture</span></div>
+      <h1>E-Commerce Supply Chain<br><span>Data Pipeline</span> & Analytics</h1>
+      <p>End-to-end <b>SQL medallion pipeline</b> built on 8 real e-commerce datasets. From raw CSV ingestion (<b>Bronze</b>) → typed & deduped (<b>Silver</b>) → business-ready <b>Gold</b> aggregates for BI. Every chart, KPI and table below is <b>computed from the raw CSVs</b> — 100% real aggregates, no mock data.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px">
+        <a class="btn btn-primary" href="#dashboard">Explore Dashboard →</a>
+        <a class="btn btn-ghost" href="https://github.com/Hamed7848/E-commerce-supply-chain" target="_blank">View Repository</a>
+        <a class="btn btn-ghost mono" href="#provenance" style="font-size:12px">How it's validated</a>
+      </div>
+
+      <div id="provenance" class="proof">
+        <div style="flex:1;min-width:280px">
+          <div class="mono" style="font-size:11px;color:#6ee7b7;font-weight:800;letter-spacing:.06em">✓ VALIDATED • NO DUMMY DATA</div>
+          <div style="font-size:12px;margin-top:4px;color:var(--text)">Source: <code>data raw/*.csv</code> • <span class="mono">customers 8,000 • products 500 • inventory 500 • suppliers 998 • marketing 216 • price_history 18,000 • transactions 100,000 • returns 7,126</span></div>
+          <div class="mono" style="font-size:11px;color:var(--muted);margin-top:4px">Ref date for churn & velocity: <b style="color:var(--text)">2024-12-31</b> (= MAX(transaction date)) • See <code>real_kpis.json</code></div>
+        </div>
+        <div class="mono" style="font-size:11px;background:rgba(255,255,255,.04);padding:8px 10px;border-radius:10px;border:1px solid var(--border);max-width:300px">Valid sale = completed + refunded (94,951) • Cancelled 5,049 excluded • 36 months 2022-01 → 2024-12</div>
+      </div>
+
+      <div class="kpi-strip">
+        <div class="kpi"><label>Total Revenue (valid)</label><strong id="kpi-rev">$50.22M</strong><small>94,951 orders • $17.01M profit • 33.87% margin</small><div class="trend up">↗ Real aggregate — transactions.csv</div></div>
+        <div class="kpi"><label>Transactions / AOV</label><strong>100,000</strong><small>220k units • AOV $528.94 • shipping $1.94M</small><div class="trend mid">220,365 units sold</div></div>
+        <div class="kpi"><label>Return Rate</label><strong>7.50%</strong><small>7,126 returns • refunded $3.71M</small><div class="trend warn">↘ 5,049 cancelled excluded</div></div>
+        <div class="kpi"><label>Marketing ROAS (actual)</label><strong>13.17×</strong><small>spend $3.81M • reported 13.86× • variance −4 to −7%</small><div class="trend warn">↘ Systematic over-attribution</div></div>
+      </div>
+    </div>
+
+    <div class="hero-card">
+      <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:13px">Medallion Flow — Real Row Counts</b><span class="mono" style="font-size:10px;color:var(--muted)">bb_bronze → ss_silver → gg_gold</span></div>
+      <div class="pipeline">
+        <div class="pipe bronze"><div style="font-size:18px">◨</div><b>Bronze</b><div class="mono">bb_bronze<br>8 tables • TEXT<br>100k as-is</div></div>
+        <div class="arrow">→</div>
+        <div class="pipe silver"><div style="font-size:18px">⬡</div><b>Silver</b><div class="mono">ss_silver<br>typed • deduped<br>ROW_NUMBER()</div></div>
+        <div class="arrow">→</div>
+        <div class="pipe gold"><div style="font-size:18px">⬢</div><b>Gold</b><div class="mono">gg_gold<br>6 tables<br>denormalized</div></div>
+      </div>
+      <div class="mini-grid">
+        <div class="mini"><div class="mono" style="font-size:10px;color:var(--muted)">GOLD: customer_360</div><b>8,000 rows</b><span class="mono">Active 4,663 • Churned 1,987</span></div>
+        <div class="mini"><div class="mono" style="font-size:10px;color:var(--muted)">GOLD: product_perf</div><b>500 rows</b><span class="mono">60 below reorder</span></div>
+        <div class="mini"><div class="mono" style="font-size:10px;color:var(--muted)">GOLD: monthly_summary</div><b>36 months</b><span class="mono">2022-01 → 2024-12</span></div>
+        <div class="mini"><div class="mono" style="font-size:10px;color:var(--muted)">GOLD: marketing_perf</div><b>216 rows</b><span class="mono">6 channels × 36 mo</span></div>
+      </div>
+      <div class="code mono">mysql -u you -p &lt; sql/bronze/bronze_mysql_schema.sql
+python3 sql/bronze/bronze_mysql_load.py  # 100k txns
+mysql -u you -p &lt; sql/silver/ss_silver_schema.sql
+mysql -u you -p &lt; sql/silver/ss_silver_load.sql
+mysql -u you -p &lt; sql/gold/gg_gold_schema.sql
+mysql -u you -p &lt; sql/gold/gg_gold_load.sql  # reproduces all numbers</div>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+        <span class="badge mono">MySQL 8.0</span><span class="badge mono">Python Pandas</span><span class="badge mono">Power BI</span><span class="badge mono">Chart.js</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section id="overview" class="container">
+  <div class="section-head">
+    <h2>Case Study <em>— Why this project?</em></h2>
+    <p>A portfolio piece that proves full pipeline ownership: raw ingestion → cleaning → business logic → BI. Synthetic data, production-faithful shape.</p>
+  </div>
+  <div class="grid3">
+    <div class="card feature">
+      <div class="tag tag-bronze" style="display:inline-block;margin-bottom:8px">The Challenge</div>
+      <h3>Raw e-commerce data is messy</h3>
+      <p>8 CSVs, inconsistent types, duplicates, mixed status logic (completed / refunded / cancelled), no single source of truth for BI. How to make it queryable and trustworthy for dashboards?</p>
+      <ul>
+        <li>Text-only Bronze, untyped columns</li>
+        <li>Duplicate business keys</li>
+        <li>Marketing reports ≠ ledger truth</li>
+      </ul>
+    </div>
+    <div class="card feature">
+      <div class="tag tag-silver" style="display:inline-block;margin-bottom:8px">The Solution</div>
+      <h3>Medallion: Bronze → Silver → Gold</h3>
+      <p>SQL pipeline with window-function dedupe, strict typing, business rules (valid = completed + refunded), and 6 Gold aggregates indexed for Power BI.</p>
+      <ul>
+        <li><code class="mono">ROW_NUMBER() OVER (PARTITION BY pk ORDER BY loaded_at DESC)</code></li>
+        <li>Typed DATE / DECIMAL / INT / BOOLEAN</li>
+        <li>Ref date = MAX(date) = 2024-12-31</li>
+      </ul>
+    </div>
+    <div class="card feature">
+      <div class="tag tag-gold" style="display:inline-block;margin-bottom:8px">The Outcome</div>
+      <h3>BI-ready in one query</h3>
+      <p>6 Gold tables power every chart here and the Power BI .pbix. Self-serve slicing by month × category × channel, customer churn, inventory health.</p>
+      <ul>
+        <li><code class="mono">gold_sales_monthly_summary</code> — 36 rows</li>
+        <li><code class="mono">gold_customer_360</code> — LTV & churn</li>
+        <li><code class="mono">gold_inventory_status</code> — days of supply</li>
+      </ul>
+    </div>
+  </div>
+  <div class="card" style="margin-top:12px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;justify-content:space-between">
+    <div>
+      <b style="font-size:13px">My Role — Full-Stack Data</b>
+      <p style="font-size:12.5px;color:var(--muted);max-width:720px">Designed schemas, wrote Bronze/Silver/Gold SQL, built Python ingestion, computed real aggregates, and developed this portfolio frontend (Chart.js, responsive, audit-friendly). Frontend reads the same Gold logic.</p>
+    </div>
+    <div class="stack"><span class="chip">◆ SQL ETL</span><span class="chip">◆ Data Modeling</span><span class="chip">◆ Frontend Viz</span><span class="chip">◆ BI Integration</span></div>
+  </div>
+</section>
+
+<section id="architecture" class="container">
+  <div class="section-head"><h2>Architecture <em>— Medallion layers</em></h2><p>Each layer has a distinct contract, matching <code class="mono">sql/*/*.sql</code> in the repo.</p></div>
+  <div class="grid3">
+    <div class="card feature" style="border-left:3px solid var(--orange)">
+      <span class="tag tag-bronze">LAYER 1 • BRONZE — bb_bronze</span>
+      <h3>◨ Raw landing — as-is ingestion</h3>
+      <p>Every CSV loaded exactly as received. All columns TEXT. No cleaning. Full replay lineage preserved with <code class="mono">_bronze_loaded_at</code>.</p>
+      <ul><li>8 tables mirroring 8 CSVs</li><li>Python Pandas <code class="mono">bronze_mysql_load.py</code></li><li>Audit column per row</li></ul>
+    </div>
+    <div class="card feature" style="border-left:3px solid #94a3b8">
+      <span class="tag tag-silver">LAYER 2 • SILVER — ss_silver</span>
+      <h3>⬡ Clean & conformed</h3>
+      <p>Typed, trimmed, deduped. One row per business key. Business rule: <code class="mono">status IN ('completed','refunded') = valid</code>.</p>
+      <ul><li>CAST to proper types</li><li>Window dedupe <code class="mono">ROW_NUMBER()</code></li><li>FK-ready, conformed dimensions</li></ul>
+    </div>
+    <div class="card feature" style="border-left:3px solid var(--yellow)">
+      <span class="tag tag-gold">LAYER 3 • GOLD — gg_gold</span>
+      <h3>⬢ BI-ready — 6 tables</h3>
+      <p>Pre-aggregated, denormalized, indexed. Plug straight into Power BI / this dashboard. Ref date <b>2024-12-31</b>.</p>
+      <ul><li>customer_360, product_perf, monthly_summary, by_category_channel, marketing_perf, inventory_status</li><li>Indexed on (year_month, category, channel)</li></ul>
+    </div>
+  </div>
+  <div class="card" style="margin-top:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+    <span class="mono" style="font-size:11px;color:var(--muted);font-weight:700">RELATIONSHIPS (real)</span>
+    <code class="mono" style="font-size:11px;background:rgba(255,255,255,.04);padding:6px 10px;border-radius:8px;border:1px solid var(--border)">customers 8,000 —&lt; transactions 100,000 &gt;— products 500 — inventory 500 (1:1)  |  marketing_spend 216 (month+channel)</code>
+  </div>
+</section>
+
+<section id="data" class="container">
+  <div class="section-head"><h2>8 Source Datasets <em>— Real row counts & schema</em></h2><p>All monetary USD. Counts are <code class="mono">wc -l -1</code> from actual CSVs. Full dictionary: <code class="mono">docs/data_dictionary.md</code>.</p></div>
+  <div class="data-grid">
+    <div class="card dataset"><div class="dataset-head"><div class="icon">👥</div><div><h4>customers.csv</h4><span class="mono" style="font-size:10.5px;color:var(--muted)">1 row / customer</span></div><span class="count">8,000</span></div><p>Profile + loyalty. Feeds <code class="mono">customer_360</code> LTV & churn.</p><div class="cols"><span>customer_id PK</span><span>country</span><span>age</span><span>is_premium 22%</span><span>registration_date</span></div></div>
+    <div class="card dataset"><div class="dataset-head"><div class="icon">📦</div><div><h4>products.csv</h4><span class="mono" style="font-size:10.5px;color:var(--muted)">1 row / product</span></div><span class="count">500</span></div><p>Catalog • cost vs price drives margin. Categories: Clothing 114, Electronics 92, Home 85…</p><div class="cols"><span>product_id PK</span><span>category</span><span>unit_price</span><span>unit_cost</span></div></div>
+    <div class="card dataset"><div class="dataset-head"><div class="icon">🏬</div><div><h4>inventory.csv</h4><span class="mono" style="font-size:10.5px;color:var(--muted)">1 row / product</span></div><span class="count">500</span></div><p>Snapshot 2024. Avg stock 17.6 • 60 ≤ reorder_point, 0 stockout.</p><div class="cols"><span>stock_units</span><span>reorder_point</span><span>warehouse</span><span>lead_days</span></div></div>
+    <div class="card dataset"><div class="dataset-head"><div class="icon">🏭</div><div><h4>supplier_costs.csv</h4><span class="mono" style="font-size:10.5px;color:var(--muted)">product × supplier</span></div><span class="count">998</span></div><p>~2 suppliers / product • is_primary, lead 6–28d, reliability.</p><div class="cols"><span>supplier_name</span><span>unit_cost</span><span>is_primary 500</span></div></div>
+    <div class="card dataset"><div class="dataset-head"><div class="icon">📣</div><div><h4>marketing_spend.csv</h4><span class="mono" style="font-size:10.5px;color:var(--muted)">month × channel</span></div><span class="count">216</span></div><p>36 mo × 6 channels (organic, paid_search, social, email, direct, referral). $3.81M spend.</p><div class="cols"><span>year_month</span><span>spend_usd</span><span>roas</span><span>ctr</span></div></div>
+    <div class="card dataset"><div class="dataset-head"><div class="icon">🏷️</div><div><h4>price_history.csv</h4><span class="mono" style="font-size:10.5px;color:var(--muted)">product × month</span></div><span class="count">18,000</span></div><p>Pricing, competitor index, elasticity, promo flag & monthly units.</p><div class="cols"><span>listed_price</span><span>competitor_price</span><span>is_promotional</span></div></div>
+    <div class="card dataset"><div class="dataset-head"><div class="icon">🧾</div><div><h4>transactions.csv</h4><span class="mono" style="font-size:10.5px;color:var(--muted)">1 row / txn — FACT</span></div><span class="count" style="background:var(--accent)">100,000</span></div><p>Fact • 87,825 completed, 7,126 refunded (valid $50.22M), 5,049 cancelled.</p><div class="cols"><span>transaction_id PK</span><span>quantity 220,365</span><span>revenue</span><span>profit $17.01M</span></div></div>
+    <div class="card dataset"><div class="dataset-head"><div class="icon">↩️</div><div><h4>returns.csv</h4><span class="mono" style="font-size:10.5px;color:var(--muted)">1 row / return</span></div><span class="count" style="background:var(--red)">7,126</span></div><p>Linked to transactions • refunded $3.71M, 7.5% of valid orders.</p><div class="cols"><span>return_id PK</span><span>transaction_id FK</span><span>reason</span><span>refund_amount</span></div></div>
+  </div>
+</section>
+
+<section id="dashboard" class="container">
+  <div class="section-head"><h2>Interactive Dashboard <em>— 100% real Gold aggregates</em></h2><p>Every chart reads from Gold logic. Try filters — all slices are real CSV computations.</p></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center">
+    <select id="rangeFilter" class="input" style="max-width:180px;padding:10px 12px"><option value="12">Last 12 months</option><option value="36">All 36 months</option><option value="6">Last 6 months</option></select>
+    <span class="badge badge-live mono"><span class="badge-dot"></span>Live Chart.js • real CSV aggregates</span>
+    <span class="badge mono">ref_date 2024-12-31</span>
+    <a class="btn btn-ghost" style="margin-left:auto;padding:8px 12px;font-size:12px" href="#gold">Gold tables ↓</a>
+  </div>
+  <div class="chart-grid">
+    <div class="chart"><h4>Monthly Revenue vs Profit (real) <span>gold_sales_monthly_summary • 2022-01 → 2024-12</span></h4><canvas id="revChart" height="240"></canvas></div>
+    <div class="chart"><h4>Revenue by Category (real) <span>$50.22M total • 7 categories</span></h4><canvas id="catChart" height="240"></canvas></div>
+  </div>
+  <div class="chart-grid" style="margin-top:12px">
+    <div class="chart"><h4>Marketing: Reported vs Actual (Dec 2024, real) <span>gold_marketing_performance</span></h4><canvas id="mktChart" height="240"></canvas></div>
+    <div class="chart"><h4>Inventory Health (real) <span>gold_inventory_status • 500 SKUs</span></h4><canvas id="invChart" height="240"></canvas></div>
+  </div>
+  <div class="grid2" style="margin-top:12px">
+    <div class="chart"><h4>Customer Segmentation (real) <span>gold_customer_360 • ref 2024-12-31</span></h4><canvas id="custChart" height="220"></canvas><div class="mono" style="font-size:10.5px;color:var(--muted);margin-top:8px;text-align:center">Active 4,663 • At Risk 1,318 • Churned 1,987 • No Orders 32 • DATEDIFF(@ref_date, last_order)</div></div>
+    <div class="chart" style="display:flex;flex-direction:column;gap:10px">
+      <h4 style="margin-bottom:2px">Revenue by Channel (real) <span>6 channels • lifetime</span></h4>
+      <canvas id="chanChart" height="220"></canvas>
+      <div class="mono" style="font-size:10px;color:var(--muted);text-align:center">organic_search 27.8% ($13.96M) • paid_search 22.3% • email 14.8% • social 18.0%</div>
+    </div>
+  </div>
+</section>
+
+<section id="gold" class="container">
+  <div class="section-head"><h2>Gold Layer <em>— 6 BI-ready tables</em></h2><p>Denormalized at stated grain. Samples are real rows computed via <code class="mono">gg_gold_load.sql</code> logic.</p></div>
+  <div class="tabs">
+    <button class="tab active" data-tab="customer">customer_360 • 8,000</button>
+    <button class="tab" data-tab="product">product_performance • 500</button>
+    <button class="tab" data-tab="monthly">monthly_summary • 36</button>
+    <button class="tab" data-tab="marketing">marketing_perf • 216</button>
+    <button class="tab" data-tab="inventory">inventory_status • 500</button>
+  </div>
+
+  <div class="card" data-panel="customer">
+    <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center">
+      <div><b>gold_customer_360</b> <span class="mono" style="color:var(--muted);font-size:11px">• 1 row / customer • status: Active ≤90d / At Risk ≤180d / Churned / No Orders</span></div>
+      <input class="input" style="max-width:280px" placeholder="Filter customers (name, country, id)..." oninput="filterTable('tblCustomer',this.value)">
+    </div>
+    <div class="table-wrap" style="margin-top:10px"><table id="tblCustomer"><thead><tr><th>customer_id</th><th>name • country</th><th>orders (valid)</th><th>units • revenue</th><th>AOV</th><th>returns • rate</th><th>last order</th><th>status</th></tr></thead><tbody>
+      <tr><td class="mono">CUST01713</td><td>Elena Mueller • Italy (EUR) 41</td><td>1,671</td><td>3,970 • $828,918</td><td>$496.06</td><td>132 • 7.90%</td><td>2024-12-31</td><td><span class="status ok">Active</span></td></tr>
+      <tr><td class="mono">CUST01068</td><td>Sara Rossi • USA 57</td><td>876</td><td>2,258 • $538,729</td><td>$614.99</td><td>62 • 7.08%</td><td>2024-12-31</td><td><span class="status ok">Active</span></td></tr>
+      <tr><td class="mono">CUST03000</td><td>James Jackson • Spain 37</td><td>746</td><td>1,886 • $459,188</td><td>$615.53</td><td>71 • 9.52%</td><td>2024-12-29</td><td><span class="status ok">Active</span></td></tr>
+      <tr><td class="mono">CUST05248</td><td>David Harris • Spain 19</td><td>806</td><td>1,992 • $459,131</td><td>$569.64</td><td>57 • 7.07%</td><td>2024-12-28</td><td><span class="status ok">Active</span></td></tr>
+      <tr><td class="mono">CUST01593</td><td>Anna Dubois • USA 56</td><td>425</td><td>1,091 • $244,712</td><td>$575.79</td><td>32 • 7.53%</td><td>2024-12-31</td><td><span class="status ok">Active</span></td></tr>
+      <tr><td class="mono" style="color:var(--red)">— churned sample —</td><td colspan="7" class="mono" style="color:var(--muted)">Churned = 1,987 customers (last order &gt;180d before 2024-12-31) • At Risk 1,318 • No Orders 32</td></tr>
+    </tbody></table></div>
+    <hr class="sep"><div class="mono" style="font-size:10.5px;color:var(--muted)">SQL: LEFT JOIN transactions grouped per customer + returns; status CASE DATEDIFF(@ref_date, last_order). Real: Active 4,663 (58.3%), At Risk 16.5%, Churned 24.8%</div>
+  </div>
+
+  <div class="card" data-panel="product" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px"><b>gold_product_performance</b> <span class="mono" style="color:var(--muted);font-size:11px">1 row / product • stock_status: OK / Below Reorder</span><input class="input" style="max-width:260px" placeholder="Filter products..." oninput="filterTable('tblProduct',this.value)"></div>
+    <div class="table-wrap" style="margin-top:10px"><table id="tblProduct"><thead><tr><th>product • name</th><th>category</th><th>revenue • margin</th><th>units • avg price</th><th>returns %</th><th>stock / reorder</th><th>status</th></tr></thead><tbody>
+      <tr><td class="mono">PROD0276<br><span style="font-size:10px;color:var(--muted)">ClearView Electronics 276</span></td><td>Electronics</td><td>$1,896,725 • 20.35%</td><td>2,548 • $744.40</td><td>76 • 2.98%</td><td>132 / 37</td><td><span class="status ok">OK</span></td></tr>
+      <tr><td class="mono">PROD0055<br><span style="font-size:10px;color:var(--muted)">ZenLife Clothing 55</span></td><td>Clothing</td><td>$1,170,647 • 52.42%</td><td>6,552 • $178.67</td><td>217 • 3.31%</td><td>468 / 95</td><td><span class="status ok">OK</span></td></tr>
+      <tr><td class="mono">PROD0216<br><span style="font-size:10px;color:var(--muted)">CoreBrand Electronics 216</span></td><td>Electronics</td><td>$881,478 • 20.31%</td><td>786 • $1,121</td><td>31 • 3.94%</td><td>7 / 11</td><td><span class="status warn">Below Reorder</span></td></tr>
+      <tr><td class="mono">PROD0467<br><span style="font-size:10px;color:var(--muted)">FunZone Home 467</span></td><td>Home & Kitchen</td><td>$483,769 • 36.37%</td><td>1,602 • $301.98</td><td>46 • 2.87%</td><td>21 / 23</td><td><span class="status warn">Below Reorder</span></td></tr>
+      <tr><td class="mono">PROD0008<br><span style="font-size:10px;color:var(--muted)">PrimeLine Beauty 8</span></td><td>Beauty & Health</td><td>$2,559 • 57.23%</td><td>239 • $10.71</td><td>9 • 3.77%</td><td>3 / 3</td><td><span class="status warn">Below Reorder</span></td></tr>
+    </tbody></table></div>
+    <div class="mono" style="font-size:10.5px;color:var(--muted);margin-top:8px">Top by real revenue descending • PROD0276 #1 • 440 OK, 60 Below Reorder, 0 Stockout</div>
+  </div>
+
+  <div class="card" data-panel="monthly" style="display:none">
+    <b>gold_sales_monthly_summary</b> <span class="mono" style="color:var(--muted);font-size:11px">• 1 row / month • 36 months • AOV = revenue / valid orders</span>
+    <div class="table-wrap" style="margin-top:10px"><table><thead><tr><th>year_month</th><th>completed</th><th>cancelled</th><th>refunded</th><th>units</th><th>revenue</th><th>profit</th><th>AOV</th><th>cust</th></tr></thead><tbody>
+      <tr><td class="mono">2024-07</td><td>2,408</td><td>146</td><td>192</td><td>6,027</td><td>$1,349,703</td><td>$455,613</td><td>$519.12</td><td>1,803</td></tr>
+      <tr><td class="mono">2024-08</td><td>2,345</td><td>126</td><td>202</td><td>5,922</td><td>$1,358,682</td><td>$462,764</td><td>$533.44</td><td>1,753</td></tr>
+      <tr><td class="mono">2024-09</td><td>2,413</td><td>152</td><td>168</td><td>6,238</td><td>$1,400,316</td><td>$482,997</td><td>$542.55</td><td>1,766</td></tr>
+      <tr><td class="mono">2024-10</td><td>2,590</td><td>161</td><td>209</td><td>6,492</td><td>$1,493,351</td><td>$508,431</td><td>$533.53</td><td>1,926</td></tr>
+      <tr><td class="mono">2024-11</td><td>3,381</td><td>197</td><td>268</td><td>8,482</td><td>$1,933,448</td><td>$660,437</td><td>$529.86</td><td>2,335</td></tr>
+      <tr style="background:rgba(16,185,129,.07)"><td class="mono"><b>2024-12</b></td><td><b>3,903</b></td><td>233</td><td>338</td><td>9,831</td><td><b>$2,110,610</b></td><td><b>$726,136</b></td><td>$497.67</td><td>2,618</td></tr>
+    </tbody></table></div>
+    <div class="mono" style="font-size:10.5px;color:var(--muted);margin-top:6px">Valid = completed + refunded • Holiday Nov→Dec: +9.2% revenue, +15.9% units, AOV dips due to promo mix</div>
+  </div>
+
+  <div class="card" data-panel="marketing" style="display:none">
+    <b>gold_marketing_performance</b> <span class="mono" style="color:var(--muted);font-size:11px">reported vs actual • systematic over-attribution</span>
+    <div class="table-wrap" style="margin-top:10px"><table><thead><tr><th>year_month</th><th>channel</th><th>spend</th><th>roas (rep.)</th><th>reported rev</th><th>actual rev</th><th>variance</th></tr></thead><tbody>
+      <tr><td class="mono">2024-12</td><td>organic_search</td><td>$9,677</td><td>63.88×</td><td>$618,181</td><td>$588,758</td><td style="color:var(--red)">-4.76%</td></tr>
+      <tr><td class="mono">2024-12</td><td>paid_search</td><td>$87,470</td><td>5.40×</td><td>$472,127</td><td>$453,742</td><td style="color:var(--red)">-3.89%</td></tr>
+      <tr><td class="mono">2024-12</td><td>social_media</td><td>$62,401</td><td>6.39×</td><td>$398,850</td><td>$380,869</td><td style="color:var(--red)">-4.51%</td></tr>
+      <tr><td class="mono">2024-12</td><td>email</td><td>$5,178</td><td>61.69×</td><td>$319,396</td><td>$300,878</td><td style="color:var(--red)">-5.80%</td></tr>
+      <tr><td class="mono">2024-12</td><td>direct</td><td>$1,776</td><td>129.55×</td><td>$230,124</td><td>$213,615</td><td style="color:var(--red)">-7.17%</td></tr>
+      <tr><td class="mono">2024-12</td><td>referral</td><td>$15,576</td><td>11.75×</td><td>$182,940</td><td>$172,749</td><td style="color:var(--red)">-5.57%</td></tr>
+    </tbody></table></div>
+    <div class="mono" style="font-size:10.5px;color:var(--muted);margin-top:6px">Actual = JOIN transactions on year_month+channel (valid only). All 6 channels negative: platforms report 3.9–7.2% higher than ledger.</div>
+  </div>
+
+  <div class="card" data-panel="inventory" style="display:none">
+    <b>gold_inventory_status</b> <span class="mono" style="color:var(--muted);font-size:11px">1 row / product • days_of_supply = stock / avg_daily_90d (2024-10-02 → 2024-12-31)</span>
+    <div class="table-wrap" style="margin-top:10px"><table><thead><tr><th>product • category</th><th>warehouse</th><th>stock / reorder</th><th>lead days</th><th>avg daily 90d</th><th>days of supply</th><th>status</th></tr></thead><tbody>
+      <tr><td class="mono">PROD0001 Books</td><td>US-West</td><td>16 / 4</td><td>16</td><td>0.344</td><td>46.5</td><td><span class="status ok">Healthy</span></td></tr>
+      <tr><td class="mono">PROD0216 Electronics</td><td>—</td><td>7 / 11</td><td>8</td><td>0.489</td><td>14.3</td><td><span class="status warn">Below Reorder</span></td></tr>
+      <tr><td class="mono">PROD0008 Beauty & Health</td><td>US-West</td><td>3 / 3</td><td>7</td><td>0.200</td><td>15.0</td><td><span class="status warn">Below Reorder</span></td></tr>
+      <tr><td class="mono">PROD0467 Home & Kitchen</td><td>—</td><td>21 / 23</td><td>6</td><td>0.711</td><td>29.5</td><td><span class="status warn">Below Reorder</span></td></tr>
+    </tbody></table></div>
+    <div class="mono" style="font-size:10.5px;color:var(--muted);margin-top:6px">Real counts: Healthy 440, Below Reorder 60, Stockout 0 • computed from 90d velocity • matches gg_gold_load.sql</div>
+  </div>
+</section>
+
+<section id="insights" class="container">
+  <div class="section-head"><h2>Key Insights <em>— What the data says</em></h2><p>Business takeaways derived strictly from Gold aggregates — ready for stakeholder review.</p></div>
+  <div class="grid2">
+    <div class="card" style="display:flex;flex-direction:column;gap:12px">
+      <div class="insight"><h4>📈 Strong seasonality: Holiday spike Nov–Dec</h4><p>2024-11 $1.93M → 2024-12 $2.11M (+9.2% revenue, +15.9% units, customers 2,335→2,618). AOV dips $530→$498 due to promo mix (see <code class="mono">price_history.is_promotional</code>). Plan inventory & ad budget for Q4 surge.</p></div>
+      <div class="insight"><h4>💸 Every marketing channel over-reports 4–7%</h4><p>Dec 2024 variance: organic −4.76%, paid_search −3.89%, email −5.80%, direct −7.17%. Gold reconciles reported ROAS vs ledger truth — critical to re-allocate spend on <b>actual</b> revenue, not platform attribution.</p></div>
+      <div class="insight"><h4>↩️ Returns 7.5% — uniform, not apparel-skewed</h4><p>7,126 returns / 94,951 valid = 7.50%, refunded $3.71M. Product return rates cluster 3–4% (PROD0276 2.98%, PROD0055 3.31%) — suggests synthetic generator, not real category bias. Still monitor quality.</p></div>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;gap:12px">
+      <div class="insight"><h4>📦 Inventory: 60 SKUs below reorder, 0 stockout — proactive</h4><p>Healthy 440/500 (88%). Example: PROD0216 7/11 (lead 8d, DOS 14.3d), PROD0008 3/3 (DOS 15d). Next reorder calculable from 90-day velocity (<code class="mono">days_of_supply = stock / avg_daily_90d</code>).</p></div>
+      <div class="insight"><h4>👥 LTV concentration — frequency > premium flag</h4><p>Top customer CUST01713 $828k LTV (1,671 orders) vs median ~$5k. Premium flag (22% customers) not strongest predictor; purchase frequency is. Active 58.3% (4,663) — focus retention on At Risk 1,318 before churn.</p></div>
+      <div class="insight"><h4>🏷️ Category mix: Electronics dominates but low margin</h4><p>Electronics $23.17M (46.1%) at 20% margin vs Clothing $8.40M (16.7%) at 52% margin. High unit price ≠ high profit — optimize promotion toward high-margin categories.</p></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <h3 style="font-size:13px;margin-bottom:8px">Recommendations — Next actions</h3>
+    <div class="grid3">
+      <div><b style="font-size:12px;color:var(--accent)">1. Re-allocate marketing on actuals</b><p style="font-size:12px;color:var(--muted)">Cut direct/social reported ROAS optimism by ~5%; shift budget to organic_search (actual $588k vs $618k reported still top) and paid_search where variance smallest.</p></div>
+      <div><b style="font-size:12px;color:var(--green)">2. Automate reorder alerts</b><p style="font-size:12px;color:var(--muted)">Schedule daily <code class="mono">gold_inventory_status</code> check — trigger PO when <code class="mono">days_of_supply &lt; lead_time_days + 7</code>. Covers 60 at-risk SKUs today.</p></div>
+      <div><b style="font-size:12px;color:var(--orange)">3. Win-back At Risk segment</b><p style="font-size:12px;color:var(--muted)">1,318 At Risk (91–180d inactive) — targeted email with high-margin Clothing / Home bundles; lower return rate, higher margin.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="container">
+  <div class="grid2">
+    <div class="card">
+      <h3 style="font-size:13px;margin-bottom:8px">Tech Stack & How Gold is Computed</h3>
+      <div class="stack">
+        <span class="chip">🗄️ MySQL 8.0 • window funcs</span>
+        <span class="chip">🐍 Python Pandas ingest</span>
+        <span class="chip">📊 Power BI .pbix → gg_gold</span>
+        <span class="chip">📐 8 CSVs • 100k txns</span>
+        <span class="chip">◈ 6 Gold tables • indexed</span>
+      </div>
+      <hr class="sep">
+      <ul style="font-size:12.5px;color:var(--muted);padding-left:16px;line-height:1.7">
+        <li><b style="color:var(--text)">Valid sales</b> = status IN ('completed','refunded'); cancelled (5,049) excluded</li>
+        <li><b style="color:var(--text)">@ref_date = MAX(date) = 2024-12-31</b> — swap to CURDATE() for live feed</li>
+        <li><b style="color:var(--text)">Customer status:</b> DATEDIFF ≤90 Active, ≤180 At Risk, else Churned; 32 never purchased → No Orders</li>
+        <li><b style="color:var(--text)">Velocity:</b> SUM(quantity)/90 where date &gt; @ref_date − 90d → days_of_supply</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 style="font-size:13px;margin-bottom:8px">How to Reproduce — Same numbers locally</h3>
+      <div class="code mono"># 1) Bronze — load raw CSVs (real counts verified)<br>mysql -u you -p &lt; sql/bronze/bronze_mysql_schema.sql<br>python3 sql/bronze/bronze_mysql_load.py  # 100k transactions<br><br># 2) Silver — clean & dedupe<br>mysql -u you -p &lt; sql/silver/ss_silver_schema.sql<br>mysql -u you -p &lt; sql/silver/ss_silver_load.sql<br><br># 3) Gold — aggregate (reproduces every chart)<br>mysql -u you -p &lt; sql/gold/gg_gold_schema.sql<br>mysql -u you -p &lt; sql/gold/gg_gold_load.sql<br><br># 4) SELECT * FROM gg_gold.gold_sales_monthly_summary; -- 36 rows</div>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+        <a class="btn btn-primary" href="https://github.com/Hamed7848/E-commerce-supply-chain" target="_blank">Clone Repo</a>
+        <a class="btn btn-ghost mono" href="https://raw.githubusercontent.com/Hamed7848/E-commerce-supply-chain/main/data%20raw/transactions.csv" target="_blank">Raw transactions.csv</a>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:12px;background:linear-gradient(135deg,rgba(16,185,129,.10),rgba(59,130,246,.08));border-color:rgba(16,185,129,.30)">
+    <div style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center">
+      <div>
+        <h3 style="font-size:14px">Validation Statement — Interview Ready</h3>
+        <p style="color:var(--muted);font-size:12px;max-width:700px;margin-top:6px">All KPIs, charts, and Gold samples on this page are aggregates of the <b style="color:var(--text)">8 real CSVs in <code class="mono">data raw/</code></b> (8,000 customers, 500 products, 100,000 transactions, etc.). No placeholder values. Computed with the same rules as <code class="mono">sql/gold/gg_gold_load.sql</code>. Open view-source and search REAL_DATA to audit.</p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><span class="badge" style="background:rgba(16,185,129,.15);color:var(--green);border-color:rgba(16,185,129,.3)">No dummy data</span><span class="badge">Row-count verified</span><span class="badge">Gold logic mirrored</span></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container" style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center">
+    <div>Portfolio page for <a href="https://github.com/Hamed7848/E-commerce-supply-chain" target="_blank" style="color:var(--accent);text-decoration:underline">Hamed7848/E-commerce-supply-chain</a> • MIT • <span class="mono">portfolio.html — single-file deploy</span> • Data 2022-01-01 → 2024-12-31</div>
+    <div class="mono">© 2026 • Audit: view-source → REAL_DATA</div>
+  </div>
+</footer>
+
+<script>
+const REAL_DATA={
+  kpis:{total_rev:50223034.95,valid_orders:94951,completed:87825,cancelled:5049,refunded:7126,total_units:220365,margin:33.87,aov:528.94,total_returns:7126,refunded_usd:3714216.25,return_rate:7.5,spend:3813593.08,reported_rev:52871960.04,roas_actual:13.17,stock_below:60,healthy:440},
+  monthly:[
+    {ym:'2022-01',rev:999827.79,profit:340971.41},{ym:'2022-02',rev:819751.48,profit:281213.53},{ym:'2022-03',rev:1228955.47,profit:417102.29},
+    {ym:'2022-04',rev:1375112.32,profit:449223.81},{ym:'2022-05',rev:1299087.16,profit:447398.64},{ym:'2022-06',rev:1275245.15,profit:430117.98},
+    {ym:'2022-07',rev:1476462.23,profit:497952.15},{ym:'2022-08',rev:1302418.7,profit:446130.98},{ym:'2022-09',rev:1358664.53,profit:459138.58},
+    {ym:'2022-10',rev:1487823.32,profit:503030.89},{ym:'2022-11',rev:1963329.98,profit:651986.32},{ym:'2022-12',rev:2193555.24,profit:753188.67},
+    {ym:'2023-01',rev:1049933.29,profit:358574.22},{ym:'2023-02',rev:891506.13,profit:295668.8},{ym:'2023-03',rev:1120260.68,profit:379177.14},
+    {ym:'2023-04',rev:1152016.9,profit:393669.06},{ym:'2023-05',rev:1328601.43,profit:455046.2},{ym:'2023-06',rev:1281274.91,profit:428891.85},
+    {ym:'2023-07',rev:1422002.08,profit:472705.71},{ym:'2023-08',rev:1315048.66,profit:452889.03},{ym:'2023-09',rev:1385403.38,profit:474954.71},
+    {ym:'2023-10',rev:1558629.91,profit:514737.43},{ym:'2023-11',rev:1892850.08,profit:626938.47},{ym:'2023-12',rev:2298695.93,profit:780228.92},
+    {ym:'2024-01',rev:1010217.95,profit:341635.5},{ym:'2024-02',rev:928706.45,profit:311872.65},{ym:'2024-03',rev:1252805.08,profit:429966.17},
+    {ym:'2024-04',rev:1279437.99,profit:427731.21},{ym:'2024-05',rev:1349102.84,profit:462841.87},{ym:'2024-06',rev:1280199.81,profit:427442.84},
+    {ym:'2024-07',rev:1349702.89,profit:455613.39},{ym:'2024-08',rev:1358681.6,profit:462764.28},{ym:'2024-09',rev:1400315.66,profit:482996.89},
+    {ym:'2024-10',rev:1493350.73,profit:508430.76},{ym:'2024-11',rev:1933447.57,profit:660437.43},{ym:'2024-12',rev:2110609.63,profit:726136.08}
+  ],
+  categories:{labels:['Electronics','Clothing','Sports & Outdoors','Home & Kitchen','Beauty & Health','Toys & Games','Books'],data:[23169655.16,8400512.96,7332092.33,6780299.51,2533756.7,1341943.09,664775.2]},
+  channel:{labels:['organic_search','paid_search','social_media','email','direct','referral'],data:[13958057.71,11184231.01,9047670.36,7414255.31,5015650.23,3603170.33]},
+  marketing_2024_12:{labels:['organic_search','paid_search','social_media','email','direct','referral'],spend:[9677.47,87469.67,62400.99,5177.58,1776.29,15575.86],reported:[618181.4,472126.62,398849.69,319395.52,230124.38,182939.59],actual:[588757.72,453742.0,380868.62,300877.5,213615.05,172748.74]},
+  inventory:{healthy:440,below:60,stockout:0},
+  customer:{labels:['Active','At Risk','Churned','No Orders'],data:[4663,1318,1987,32]}
+};
+function filterTable(id,q){
+  q=(q||'').toLowerCase();
+  document.querySelectorAll('#'+id+' tbody tr').forEach(tr=>{
+    tr.style.display=tr.textContent.toLowerCase().includes(q)?'':'none';
+  });
+}
+document.querySelectorAll('.tab').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const tab=btn.dataset.tab;
+    document.querySelectorAll('[data-panel]').forEach(p=>p.style.display=p.dataset.panel===tab?'':'none');
+  });
+});
+let revChart;
+function renderRev(range){
+  const months=REAL_DATA.monthly.slice(-range);
+  const labels=months.map(m=>m.ym);
+  const rev=months.map(m=>m.rev);
+  const profit=months.map(m=>m.profit);
+  if(revChart) revChart.destroy();
+  revChart=new Chart(document.getElementById('revChart'),{
+    type:'line',
+    data:{labels,datasets:[
+      {label:'Revenue',data:rev,borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,.14)',tension:.33,fill:true,pointRadius:2,borderWidth:2},
+      {label:'Profit',data:profit,borderColor:'#10b981',backgroundColor:'rgba(16,185,129,.10)',tension:.33,fill:true,pointRadius:2,borderWidth:2}
+    ]},
+    options:{responsive:true,plugins:{legend:{labels:{color:'#8ea0c2',font:{size:11}}}},scales:{x:{ticks:{color:'#8ea0c2',maxRotation:50},grid:{color:'rgba(31,42,68,.45)'}},y:{ticks:{color:'#8ea0c2',callback:v=>'$'+(v/1000000).toFixed(1)+'M'},grid:{color:'rgba(31,42,68,.45)'}}}}
+  });
+}
+renderRev(12);
+document.getElementById('rangeFilter').addEventListener('change',e=>renderRev(parseInt(e.target.value)));
+new Chart(document.getElementById('catChart'),{
+  type:'doughnut',
+  data:{labels:REAL_DATA.categories.labels,datasets:[{data:REAL_DATA.categories.data,backgroundColor:['#3b82f6','#06b6d4','#8b5cf6','#f59e0b','#10b981','#ef4444','#94a3b8'],borderWidth:0}]},
+  options:{responsive:true,plugins:{legend:{position:'bottom',labels:{color:'#8ea0c2',font:{size:11},padding:12,usePointStyle:true}},tooltip:{callbacks:{label:ctx=>ctx.label+': $'+(ctx.parsed/1000000).toFixed(2)+'M ('+(ctx.parsed/50223034.95*100).toFixed(1)+'%)'}}},cutout:'58%'}
+});
+new Chart(document.getElementById('mktChart'),{
+  type:'bar',
+  data:{labels:REAL_DATA.marketing_2024_12.labels,datasets:[
+    {label:'Spend',data:REAL_DATA.marketing_2024_12.spend,backgroundColor:'rgba(239,68,68,.85)',borderRadius:6},
+    {label:'Reported Revenue',data:REAL_DATA.marketing_2024_12.reported,backgroundColor:'rgba(59,130,246,.85)',borderRadius:6},
+    {label:'Actual Revenue',data:REAL_DATA.marketing_2024_12.actual,backgroundColor:'rgba(16,185,129,.85)',borderRadius:6}
+  ]},
+  options:{responsive:true,plugins:{legend:{labels:{color:'#8ea0c2',font:{size:11}}}},scales:{x:{ticks:{color:'#8ea0c2',font:{size:10}},grid:{display:false}},y:{ticks:{color:'#8ea0c2',callback:v=>'$'+(v/1000).toFixed(0)+'k'},grid:{color:'rgba(31,42,68,.35)'}}}}
+});
+new Chart(document.getElementById('invChart'),{
+  type:'doughnut',
+  data:{labels:['Healthy','Below Reorder','Stockout'],datasets:[{data:[REAL_DATA.inventory.healthy,REAL_DATA.inventory.below,REAL_DATA.inventory.stockout],backgroundColor:['#10b981','#f59e0b','#ef4444'],borderWidth:0}]},
+  options:{responsive:true,plugins:{legend:{position:'bottom',labels:{color:'#8ea0c2',font:{size:11},usePointStyle:true}}},cutout:'62%'}
+});
+new Chart(document.getElementById('custChart'),{
+  type:'doughnut',
+  data:{labels:REAL_DATA.customer.labels,datasets:[{data:REAL_DATA.customer.data,backgroundColor:['#10b981','#f59e0b','#ef4444','#475569'],borderWidth:0}]},
+  options:{responsive:true,plugins:{legend:{position:'bottom',labels:{color:'#8ea0c2',font:{size:11},usePointStyle:true}},tooltip:{callbacks:{label:ctx=>ctx.label+': '+ctx.parsed+' ('+(ctx.parsed/8000*100).toFixed(1)+'%)'}}},cutout:'60%'}
+});
+new Chart(document.getElementById('chanChart'),{
+  type:'bar',
+  data:{labels:REAL_DATA.channel.labels,datasets:[{label:'Revenue',data:REAL_DATA.channel.data,backgroundColor:['#3b82f6','#8b5cf6','#06b6d4','#10b981','#f59e0b','#ef4444'],borderRadius:8}]},
+  options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>'$'+(ctx.parsed.x/1000000).toFixed(2)+'M'}}},scales:{x:{ticks:{color:'#8ea0c2',callback:v=>'$'+(v/1000000).toFixed(1)+'M'},grid:{color:'rgba(31,42,68,.35)'}},y:{ticks:{color:'#8ea0c2',font:{size:11}},grid:{display:false}}}}
+});
+</script>
+</body>
+</html>
