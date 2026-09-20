@@ -3,457 +3,447 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>E-Commerce Supply Chain — Medallion Data Pipeline | Portfolio Case Study — Real Data</title>
-<meta name="description" content="Portfolio case study — 100% real data from 8 raw CSVs via Bronze→Silver→Gold pipeline. 100k transactions, $50.2M revenue, 6 Gold tables. No mock data.">
+<title>[PROJECT TITLE] — Data Analysis Case Study</title>
+<meta name="description" content="[SHORT PROJECT DESCRIPTION] — Data Analysis portfolio case study">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config={theme:{extend:{fontFamily:{sans:['Inter','system-ui','sans-serif'],mono:['JetBrains Mono','monospace']},colors:{bg:'#0a0e14',card:'#151d2b',border:'#232f45',muted:'#8b9bb4',accent:'#3b82f6',accent2:'#06b6d4'}}}}
+</script>
 <style>
-:root{--bg:#0a0e14;--bg-soft:#10161f;--card:#151d2b;--border:#232f45;--text:#e6edf3;--muted:#8b9bb4;--accent:#3b82f6;--accent2:#06b6d4;--orange:#f59e0b;--green:#10b981;--red:#ef4444;--violet:#8b5cf6}
-*{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}
-body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden}
-a{color:inherit;text-decoration:none}.mono{font-family:'JetBrains Mono',monospace}
-.container{max-width:1180px;margin:0 auto;padding:0 24px}
-nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(16px);background:rgba(10,14,20,.78);border-bottom:1px solid var(--border)}
-.nav-inner{height:64px;display:flex;align-items:center;justify-content:space-between}
-.logo{display:flex;align-items:center;gap:12px;font-weight:800;letter-spacing:.02em}
-.logo-mark{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;font-size:14px}
-.nav-links{display:flex;gap:16px;font-size:12.5px;color:var(--muted);font-weight:500;flex-wrap:wrap}
-.nav-links a:hover{color:var(--text)}
-.btn{padding:10px 18px;border-radius:10px;font-weight:600;font-size:13px;display:inline-flex;align-items:center;gap:8px;transition:.2s;border:1px solid transparent;cursor:pointer}
-.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;box-shadow:0 8px 24px rgba(59,130,246,.35)}
-.btn-ghost{border-color:var(--border);background:rgba(255,255,255,.04);color:var(--text)}
-.badge{font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--muted);font-weight:600}
-.badge-dot{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;box-shadow:0 0 8px var(--green)}
-.hero{padding:28px 0 16px}.hero-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:32px;align-items:start}
-@media(max-width:900px){.hero-grid{grid-template-columns:1fr}}
-.hero h1{font-size:42px;line-height:1.05;letter-spacing:-.03em;font-weight:800}
-@media(max-width:600px){.hero h1{font-size:30px}}
-.hero h1 span{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.hero p{color:var(--muted);font-size:14.5px;margin:14px 0 18px;max-width:620px}
-.hero-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-.provenance{background:linear-gradient(135deg,rgba(16,185,129,.14),rgba(59,130,246,.10));border:1px solid rgba(16,185,129,.35);border-radius:14px;padding:12px 14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:14px 0}
-.provenance b{color:var(--green)} .provenance code{background:rgba(255,255,255,.06);padding:2px 6px;border-radius:6px;border:1px solid var(--border)}
-.hero-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
-.stat-mini{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px}
-.stat-mini b{font-size:18px;display:block}.stat-mini span{font-size:11px;color:var(--muted)}
-.hero-card{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.01));border:1px solid var(--border);border-radius:20px;padding:18px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
-.pipeline-visual{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:14px 0}
-.pipe-node{flex:1;text-align:center;padding:12px 6px;border-radius:14px;border:1px solid var(--border);background:var(--card);font-size:11px}
-.pipe-node.bronze{border-color:rgba(245,158,11,.5);background:linear-gradient(180deg,rgba(245,158,11,.12),rgba(245,158,11,.02))}
-.pipe-node.silver{border-color:rgba(139,155,180,.5);background:linear-gradient(180deg,rgba(139,155,180,.10),rgba(139,155,180,.02))}
-.pipe-node.gold{border-color:rgba(251,191,36,.5);background:linear-gradient(180deg,rgba(251,191,36,.14),rgba(245,158,11,.03))}
-.pipe-arrow{color:var(--muted);font-size:16px}
-.code-block{background:#0d1117;border:1px solid var(--border);border-radius:12px;padding:12px;font-size:11px;color:#8b9bb4;overflow:auto;line-height:1.6}
-.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:22px 0}
-@media(max-width:900px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
-.kpi{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;position:relative;overflow:hidden}
-.kpi::after{content:"";position:absolute;inset:0 0 auto 0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2));opacity:.85}
-.kpi label{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
-.kpi strong{font-size:20px;display:block;margin:5px 0 2px}
-.kpi small{font-size:11.5px;color:var(--muted)}
-.kpi .trend{font-size:11px;font-weight:600;margin-top:4px}
-.trend.up{color:var(--green)} .trend.down{color:var(--red)}
-section{padding:28px 0}
-.section-head{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:16px;flex-wrap:wrap}
-.section-head h2{font-size:24px;letter-spacing:-.02em}.section-head p{color:var(--muted);font-size:13px;max-width:560px}
-.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px}
-.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-.grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
-@media(max-width:900px){.grid-3,.grid-2{grid-template-columns:1fr}}
-.layer{border:1px solid var(--border);border-radius:16px;padding:16px;background:var(--card)}
-.layer h3{font-size:14px;margin-bottom:6px}.layer p{font-size:12.5px;color:var(--muted)}
-.layer ul{margin-top:8px;padding-left:16px;font-size:12px;color:var(--muted)}
-.tag{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:4px 8px;border-radius:999px;border:1px solid var(--border)}
-.tag.bronze{color:#f59e0b;border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.12)}
-.tag.silver{color:#cbd5e1;border-color:rgba(203,213,225,.3);background:rgba(203,213,225,.08)}
-.tag.gold{color:#fbbf24;border-color:rgba(251,191,36,.4);background:rgba(251,191,36,.12)}
-.dataset{padding:14px;display:flex;flex-direction:column;gap:8px}
-.dataset-head{display:flex;align-items:center;gap:10px}
-.dataset-icon{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:15px;background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.25)}
-.dataset h4{font-size:12.5px}
-.dataset p{font-size:11.5px;color:var(--muted)}
-.cols{font-size:10.5px;color:var(--muted);display:flex;flex-wrap:wrap;gap:5px}
-.cols span{background:rgba(255,255,255,.05);border:1px solid var(--border);padding:3px 7px;border-radius:999px}
-.count-badge{background:var(--green);color:white;font-size:10px;padding:2px 7px;border-radius:999px;font-weight:700}
-.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-.tab{padding:7px 11px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.03);font-size:11.5px;font-weight:600;color:var(--muted);cursor:pointer}
-.tab.active{background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;border-color:transparent;box-shadow:0 6px 16px rgba(59,130,246,.35)}
-.table-wrap{overflow:auto;border:1px solid var(--border);border-radius:12px}
-table{width:100%;border-collapse:collapse;font-size:12px;min-width:680px}
-th{text-align:left;padding:9px 10px;background:rgba(255,255,255,.03);color:var(--muted);font-size:10px;letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--border)}
-td{padding:9px 10px;border-bottom:1px solid rgba(35,47,69,.5)} tr:hover td{background:rgba(255,255,255,.02)}
-.badge-status{padding:3px 7px;border-radius:999px;font-size:10.5px;font-weight:700;border:1px solid}
-.badge-status.active{color:var(--green);border-color:rgba(16,185,129,.3);background:rgba(16,185,129,.12)}
-.badge-status.risk{color:var(--orange);border-color:rgba(245,158,11,.3);background:rgba(245,158,11,.12)}
-.badge-status.churn{color:var(--red);border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.12)}
-.chart-grid{display:grid;grid-template-columns:1.6fr .9fr;gap:12px}
-@media(max-width:900px){.chart-grid{grid-template-columns:1fr}}
-.chart-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px}
-.chart-card h4{font-size:12.5px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
-.chart-card h4 span{font-size:10.5px;color:var(--muted);font-weight:500}
-.insight{border-left:3px solid var(--accent);padding-left:12px}
-.insight h4{font-size:12.5px;margin-bottom:3px}.insight p{font-size:11.5px;color:var(--muted)}
-.stack{display:flex;flex-wrap:wrap;gap:8px}
-.stack-item{padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:var(--card);font-size:11.5px;font-weight:600;display:flex;align-items:center;gap:6px}
-footer{border-top:1px solid var(--border);padding:22px 0;color:var(--muted);font-size:11.5px;margin-top:10px}
-.search{padding:9px 11px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.03);color:var(--text);font-size:12px;outline:none;width:100%}
-.search:focus{border-color:var(--accent)}
-hr.sep{border:none;border-top:1px solid var(--border);margin:10px 0}
+html{scroll-behavior:smooth}
+*{scrollbar-width:thin;scrollbar-color:#232f45 transparent}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:#232f45;border-radius:8px}
+.reveal{opacity:0;transform:translateY(8px);animation:reveal .5s ease forwards}
+@keyframes reveal{to{opacity:1;transform:none}}
 </style>
 </head>
-<body>
-<nav>
-  <div class="container nav-inner">
-    <div class="logo"><div class="logo-mark">◈</div> <span>ECOM<span style="color:var(--muted);font-weight:600"> • Supply Chain</span></span> <span class="badge" style="margin-left:8px">Real Data • No Mockups</span></div>
-    <div class="nav-links">
-      <a href="#provenance">Provenance</a>
-      <a href="#architecture">Architecture</a>
-      <a href="#data">8 Datasets</a>
-      <a href="#gold">Gold Layer</a>
-      <a href="#dashboard">Dashboard</a>
-      <a href="https://github.com/Hamed7848/E-commerce-supply-chain" target="_blank">GitHub ↗</a>
+<body class="bg-[#0a0e14] text-[#e6edf3] antialiased leading-relaxed">
+
+<!-- STICKY NAV -->
+<nav class="sticky top-0 z-50 backdrop-blur-xl bg-[#0a0e14]/80 border-b border-[#232f45]">
+  <div class="max-w-[1180px] mx-auto px-6 h-[64px] flex items-center justify-between gap-4">
+    <a href="#hero" class="flex items-center gap-3 font-extrabold tracking-tight">
+      <span class="w-8 h-8 rounded-lg bg-gradient-to-br from-[#3b82f6] to-[#06b6d4] grid place-items-center text-sm">◈</span>
+      <span data-bind="projectTitle" class="hidden sm:inline">[PROJECT TITLE]</span>
+      <span class="text-[10px] tracking-widest uppercase px-2 py-1 rounded-full border border-[#232f45] bg-white/5 text-[#8b9bb4] font-semibold">Data Case Study</span>
+    </a>
+    <div class="hidden lg:flex items-center gap-5 text-[13px] font-medium text-[#8b9bb4]">
+      <a href="#overview" class="hover:text-white transition">Overview</a>
+      <a href="#problem" class="hover:text-white transition">Problem</a>
+      <a href="#data" class="hover:text-white transition">Data</a>
+      <a href="#cleaning" class="hover:text-white transition">Cleaning</a>
+      <a href="#eda" class="hover:text-white transition">EDA</a>
+      <a href="#insights" class="hover:text-white transition">Insights</a>
+      <a href="#recommendations" class="hover:text-white transition">Recommendations</a>
+    </div>
+    <div class="flex items-center gap-2">
+      <a data-link="github" href="#" target="_blank" class="hidden sm:inline-flex px-3 py-2 rounded-xl border border-[#232f45] bg-white/5 text-xs font-semibold hover:bg-white/10 transition">GitHub ↗</a>
+      <a href="#links" class="px-4 py-2 rounded-xl bg-gradient-to-br from-[#3b82f6] to-[#06b6d4] text-white text-xs font-bold shadow-lg shadow-blue-500/20 hover:opacity-90 transition">View Project</a>
+      <button id="mobileMenuBtn" class="lg:hidden p-2 rounded-lg border border-[#232f45] bg-white/5">☰</button>
+    </div>
+  </div>
+  <div id="mobileMenu" class="hidden lg:hidden border-t border-[#232f45] bg-[#10161f] px-6 py-3">
+    <div class="grid grid-cols-2 gap-2 text-sm text-[#8b9bb4]">
+      <a href="#overview">Overview</a><a href="#problem">Problem</a><a href="#data">Data</a><a href="#cleaning">Cleaning</a><a href="#eda">EDA</a><a href="#insights">Insights</a><a href="#recommendations">Recommendations</a><a href="#process">Process</a>
     </div>
   </div>
 </nav>
 
-<header class="hero container">
-  <div class="hero-grid">
-    <div>
-      <div class="hero-meta">
-        <span class="badge"><span class="badge-dot"></span> &nbsp; 100% REAL CSV DATA</span>
-        <span class="badge mono">100,000 transactions • 2022-01-01 → 2024-12-31</span>
-        <span class="badge mono">MySQL 8.0 • Python • Power BI</span>
+<!-- 1 HERO -->
+<section id="hero" class="max-w-[1180px] mx-auto px-6 pt-10 pb-8">
+  <div class="grid lg:grid-cols-[1.15fr_.85fr] gap-8 items-center">
+    <div class="reveal">
+      <div class="inline-flex items-center gap-2 text-[11px] tracking-widest uppercase font-bold text-[#8b9bb4] border border-[#232f45] bg-white/5 px-3 py-1.5 rounded-full">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 shadow shadow-emerald-500/50"></span>
+        <span data-bind="label">[Data Analysis Project]</span>
+        <span class="hidden sm:inline text-white/40">•</span>
+        <span data-bind="overview.duration" class="hidden sm:inline font-mono normal-case tracking-normal">[PROJECT DURATION]</span>
       </div>
-      <h1>E-Commerce <span>Data Pipeline</span><br>Bronze → Silver → Gold</h1>
-      <p>A SQL medallion pipeline on 8 synthetic datasets — customers, products, inventory, suppliers, marketing, pricing, transactions & returns. <b style="color:var(--text)">Every number below is computed from the raw CSVs</b> (data raw/) using the same logic as <code class="mono">sql/gold/gg_gold_load.sql</code>: valid = completed+refunded, ref_date = MAX(date) = 2024-12-31.</p>
-      <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <a class="btn btn-primary" href="https://github.com/Hamed7848/E-commerce-supply-chain" target="_blank">View Repository ↗</a>
-        <a class="btn btn-ghost" href="#dashboard">Explore Real Dashboard ↓</a>
-        <a class="btn btn-ghost mono" href="#provenance">Validation ↓</a>
+      <h1 data-bind="projectTitle" class="mt-4 text-[34px] sm:text-[42px] font-extrabold tracking-tight leading-[1.05]">[PROJECT TITLE]</h1>
+      <p data-bind="shortDescription" class="mt-3 text-[15px] text-[#8b9bb4] max-w-[60ch]">[SHORT PROJECT DESCRIPTION — 1-2 sentences. Replace this placeholder with your real summary: what you analyzed and why it matters.]</p>
+      <div class="mt-4 flex flex-wrap gap-2" id="heroTools"></div>
+      <div class="mt-6 flex flex-wrap gap-3">
+        <a href="#eda" class="px-5 py-3 rounded-xl bg-gradient-to-br from-[#3b82f6] to-[#06b6d4] text-white text-sm font-bold shadow-lg shadow-blue-500/20 hover:opacity-90 transition">View Analysis ↓</a>
+        <a data-link="dataset" href="#" target="_blank" class="px-5 py-3 rounded-xl border border-[#232f45] bg-white/5 text-sm font-semibold hover:bg-white/10 transition">View Dataset ↗</a>
+        <a data-link="github" href="#" target="_blank" class="px-5 py-3 rounded-xl border border-[#232f45] bg-white/5 text-sm font-semibold hover:bg-white/10 transition">GitHub ↗</a>
       </div>
-      <div id="provenance" class="provenance">
-        <div style="flex:1;min-width:260px">
-          <div class="mono" style="font-size:11px;color:var(--green);font-weight:700;letter-spacing:.06em">✔ VALIDATED — NO DUMMY DATA</div>
-          <div style="font-size:12px;margin-top:4px">Source: <code>data raw/*.csv</code> from <a href="https://github.com/Hamed7848/E-commerce-supply-chain/tree/main/data%20raw" target="_blank" style="text-decoration:underline;color:var(--accent)">Hamed7848/E-commerce-supply-chain</a> • Fetched & aggregated live • <span class="mono">rows: customers 8,000 • products 500 • inventory 500 • supplier_costs 998 • marketing 216 • price_history 18,000 • transactions 100,000 • returns 7,126</span></div>
-          <div class="mono" style="font-size:11px;color:var(--muted);margin-top:4px">Ref date for churn & 90-day velocity: <b style="color:var(--text)">2024-12-31</b> • Last computed in browser from real CSV aggregates (see real_kpis.json)</div>
+      <div class="mt-6 p-3 rounded-xl border border-amber-500/20 bg-amber-500/10 text-xs text-amber-200/90">
+        <b class="text-amber-300">Placeholder Mode:</b> Every <code class="font-mono bg-white/10 px-1 py-0.5 rounded border border-white/10">[BRACKET]</code> is intentionally not fabricated. Replace with your real data — see <a href="#links" class="underline">Links</a> & <code class="font-mono">portfolio-data.js</code>.
+      </div>
+    </div>
+    <!-- Hero preview card -->
+    <div class="reveal bg-gradient-to-b from-white/[0.06] to-white/[0.01] border border-[#232f45] rounded-[20px] p-4 shadow-2xl" style="animation-delay:.08s">
+      <div class="flex items-center justify-between">
+        <b class="text-sm">Dashboard Preview</b>
+        <span class="font-mono text-[10px] text-[#8b9bb4] border border-[#232f45] bg-white/5 px-2 py-1 rounded-full">[INSERT DASHBOARD IMAGE]</span>
+      </div>
+      <div class="mt-3 aspect-[16/10] rounded-xl border border-[#232f45] bg-[#0d1117] grid place-items-center text-center p-6 overflow-hidden">
+        <div>
+          <div class="w-14 h-14 mx-auto rounded-xl bg-gradient-to-br from-[#3b82f6]/20 to-[#06b6d4]/20 border border-blue-500/20 grid place-items-center text-xl">📊</div>
+          <p class="mt-3 text-sm font-semibold">[PROJECT DASHBOARD PREVIEW]</p>
+          <p class="text-xs text-[#8b9bb4] mt-1">Replace this placeholder with your Power BI / Tableau / Matplotlib screenshot.<br>Recommended: 1600×1000, PNG.</p>
+          <span class="inline-block mt-3 text-[10px] tracking-widest uppercase font-bold px-2 py-1 rounded-full bg-white/5 border border-[#232f45] text-[#8b9bb4]">[INSERT IMAGE URL in portfolio-data.js]</span>
         </div>
-        <div class="mono" style="font-size:11px;background:rgba(255,255,255,.04);padding:8px 10px;border-radius:10px;border:1px solid var(--border)">Gold tables mirror SQL: customer_status (Active ≤90d, At Risk ≤180d, else Churned) • days_of_supply = stock / avg_daily_90d</div>
       </div>
-      <div class="hero-stats">
-        <div class="stat-mini"><span>Transactions (fact)</span><b>100,000</b><span class="mono">valid 94,951 • cancelled 5,049</span></div>
-        <div class="stat-mini"><span>Customers • Products</span><b>8,000 • 500</b><span class="mono">7968 distinct buyers</span></div>
-        <div class="stat-mini"><span>Revenue (valid)</span><b>$50.22M</b><span class="mono">profit $17.01M • 33.87% margin</span></div>
-      </div>
-    </div>
-    <div class="hero-card">
-      <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:13px">Medallion Flow — Real Row Counts</b><span class="mono" style="font-size:10px;color:var(--muted)">bb_bronze → ss_silver → gg_gold</span></div>
-      <div class="pipeline-visual">
-        <div class="pipe-node bronze"><div style="font-size:16px">◨</div><b>Bronze</b><div class="mono">bb_bronze<br>8 tables • TEXT<br>100k txns as-is</div></div>
-        <div class="pipe-arrow">→</div>
-        <div class="pipe-node silver"><div style="font-size:16px">⬢</div><b>Silver</b><div class="mono">ss_silver<br>typed • deduped<br>ROW_NUMBER()</div></div>
-        <div class="pipe-arrow">→</div>
-        <div class="pipe-node gold"><div style="font-size:16px">⬣</div><b>Gold</b><div class="mono">gg_gold<br>6 tables<br>denormalized</div></div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0">
-        <div class="card" style="padding:10px"><div class="mono" style="font-size:10px;color:var(--muted)">GOLD: customer_360</div><b style="font-size:12px">8,000 rows</b><span class="mono" style="font-size:10px;color:var(--muted)"> Active 4,663 • Churned 1,987</span></div>
-        <div class="card" style="padding:10px"><div class="mono" style="font-size:10px;color:var(--muted)">GOLD: product_perf</div><b style="font-size:12px">500 rows</b><span class="mono" style="font-size:10px;color:var(--muted)"> 60 below reorder</span></div>
-        <div class="card" style="padding:10px"><div class="mono" style="font-size:10px;color:var(--muted)">GOLD: monthly_summary</div><b style="font-size:12px">36 months</b><span class="mono" style="font-size:10px;color:var(--muted)"> 2022-01 → 2024-12</span></div>
-        <div class="card" style="padding:10px"><div class="mono" style="font-size:10px;color:var(--muted)">GOLD: marketing_perf</div><b style="font-size:12px">216 rows</b><span class="mono" style="font-size:10px;color:var(--muted)"> 6 channels × 36 mo</span></div>
-      </div>
-      <div class="code-block mono">mysql -u you -p &lt; sql/bronze/bronze_mysql_schema.sql
-python3 sql/bronze/bronze_mysql_load.py
-mysql -u you -p &lt; sql/silver/ss_silver_schema.sql
-mysql -u you -p &lt; sql/silver/ss_silver_load.sql
-mysql -u you -p &lt; sql/gold/gg_gold_schema.sql
-mysql -u you -p &lt; sql/gold/gg_gold_load.sql  -- reproduces all numbers below</div>
-    </div>
-  </div>
-
-  <!-- REAL KPI GRID — no dummy -->
-  <div class="kpi-grid">
-    <div class="kpi"><label>Total Revenue (valid)</label><strong>$50,223,035</strong><small>94,951 orders (completed 87,825 + refunded 7,126)</small><div class="trend up">▲ Real aggregate from transactions.csv</div></div>
-    <div class="kpi"><label>Avg Order Value</label><strong>$528.94</strong><small>220,365 units • shipping $1.94M</small><div class="trend" style="color:var(--muted)">33.87% gross margin</div></div>
-    <div class="kpi"><label>Return Rate (real)</label><strong>7.50%</strong><small>7,126 returns • refunded $3,714,216</small><div class="trend down">▼ 5,049 cancelled excluded</div></div>
-    <div class="kpi"><label>Marketing ROAS</label><strong>13.17× actual</strong><small>spend $3.81M • reported 13.86× • variance -4% to -7%</small><div class="trend down">▼ Over-attribution in ad platforms</div></div>
-    <div class="kpi"><label>Customer Segmentation</label><strong>4,663 Active</strong><small>At Risk 1,318 • Churned 1,987 • No Orders 32</small><div class="trend up">58.3% Active (≤90d from 2024-12-31)</div></div>
-    <div class="kpi"><label>SKUs & Inventory</label><strong>500 SKUs</strong><small>avg stock 17.6 • 440 Healthy • 60 Below Reorder</small><div class="trend" style="color:var(--orange)">60 need reorder • 0 stockout</div></div>
-    <div class="kpi"><label>Top Category (real)</label><strong>Electronics 46.1%</strong><small>$23.17M • Clothing 16.7% ($8.40M)</small><div class="trend" style="color:var(--muted)">7 categories • Sports 14.6%</div></div>
-    <div class="kpi"><label>Top Channel (real)</label><strong>organic_search 27.8%</strong><small>$13.96M • paid_search $11.18M • email $7.41M</small><div class="trend" style="color:var(--muted)">6 channels across 36 months</div></div>
-  </div>
-</header>
-
-<section id="architecture" class="container">
-  <div class="section-head"><h2>Architecture — Medallion (validated)</h2><p>Mirrors the repo's docs & SQL. All layer descriptions quote <code class="mono">README.md</code> & <code class="mono">sql/gold/*.sql</code>.</p></div>
-  <div class="grid-3">
-    <div class="layer"><span class="tag bronze">LAYER 1 — BRONZE</span><h3>🗄️ bb_bronze — Raw landing</h3><p>Every CSV loaded <b>exactly as received</b>. All columns TEXT. No cleaning. Preserves replay lineage.</p><ul><li>8 tables mirroring 8 real CSVs (see row counts above)</li><li>Python Pandas ingestion — <code class="mono">bronze_mysql_load.py</code></li><li>Audit: _bronze_loaded_at DATETIME</li></ul></div>
-    <div class="layer"><span class="tag silver">LAYER 2 — SILVER</span><h3>🧹 ss_silver — Clean & conformed</h3><p>Typed, trimmed, deduped. 1 row / business key via window functions.</p><ul><li>CAST to DATE / DECIMAL / INT / BOOLEAN</li><li><code class="mono">ROW_NUMBER() OVER (PARTITION BY pk ORDER BY load_time DESC)</code></li><li>Business rule: status IN ('completed','refunded') = valid</li></ul></div>
-    <div class="layer"><span class="tag gold">LAYER 3 — GOLD</span><h3>📊 gg_gold — BI-ready (6 tables)</h3><p>Pre-aggregated, denormalized, indexed. Plug into Power BI. Ref date = MAX(txn_date) = 2024-12-31.</p><ul><li>customer_360, product_performance, sales_monthly_summary, sales_by_category_channel, marketing_performance, inventory_status</li><li>Indexed on (year_month, category, channel), customer_status, stock_status</li></ul></div>
-  </div>
-  <div class="card" style="margin-top:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-    <span class="mono" style="font-size:11px;color:var(--muted)">RELATIONSHIPS (real)</span>
-    <code class="mono" style="font-size:11px;background:rgba(255,255,255,.04);padding:6px 10px;border-radius:8px;border:1px solid var(--border)">customers 8,000 ──&lt; transactions 100,000 &gt;── products 500 ──&lt; inventory 500 (1:1) &nbsp;|&nbsp; marketing_spend 216 rows (month+channel, 6 channels)</code>
-  </div>
-</section>
-
-<section id="data" class="container">
-  <div class="section-head"><h2>8 Source Datasets — Real Row Counts & Schema</h2><p>All monetary values USD. Counts are <code class="mono">wc -l -1</code> from actual CSVs. Full dictionary in <code class="mono">docs/data_dictionary.md</code>.</p></div>
-  <div class="grid-3">
-    <div class="card dataset"><div class="dataset-head"><div class="dataset-icon">👤</div><div><h4>customers.csv</h4><span class="mono" style="font-size:10px;color:var(--muted)">1 row / customer • 8,000 rows</span></div><span class="count-badge">8,000</span></div><p>Profile + loyalty. Feeds gold_customer_360 LTV & churn.</p><div class="cols"><span>customer_id PK</span><span>country (US UK DE...)</span><span>age</span><span>is_premium 22% (1,749)</span><span>registration_date</span></div></div>
-    <div class="card dataset"><div class="dataset-head"><div class="dataset-icon">📦</div><div><h4>products.csv</h4><span class="mono" style="font-size:10px;color:var(--muted)">1 row / product • 500 rows</span></div><span class="count-badge">500</span></div><p>Catalog — cost vs price drives margin. Categories: Clothing 114, Electronics 92, Home & Kitchen 85, Sports 65...</p><div class="cols"><span>product_id PK</span><span>category</span><span>brand</span><span>unit_price_usd</span><span>unit_cost_usd</span></div></div>
-    <div class="card dataset"><div class="dataset-head"><div class="dataset-icon">🏭</div><div><h4>inventory.csv</h4><span class="mono" style="font-size:10px;color:var(--muted)">1 row / product • 500 rows</span></div><span class="count-badge">500</span></div><p>Snapshot 2024. Avg stock 17.6. 60 ≤ reorder_point, 0 stockout.</p><div class="cols"><span>stock_units</span><span>reorder_point</span><span>warehouse_location</span><span>supplier_lead_days</span></div></div>
-    <div class="card dataset"><div class="dataset-head"><div class="dataset-icon">🤝</div><div><h4>supplier_costs.csv</h4><span class="mono" style="font-size:10px;color:var(--muted)">1 row / product+supplier • 998 rows</span></div><span class="count-badge">998</span></div><p>~2 suppliers / product. is_primary=1, lead_time 6–28d, reliability score.</p><div class="cols"><span>supplier_name</span><span>unit_cost</span><span>lead_time_days</span><span>is_primary 500</span></div></div>
-    <div class="card dataset"><div class="dataset-head"><div class="dataset-icon">📣</div><div><h4>marketing_spend.csv</h4><span class="mono" style="font-size:10px;color:var(--muted)">1 row / month+channel • 216 rows</span></div><span class="count-badge">216</span></div><p>36 months × 6 channels (organic_search, paid_search, social_media, email, direct, referral). Spend $3.81M, ROAS 5–129×.</p><div class="cols"><span>year_month 2022-01→2024-12</span><span>spend_usd</span><span>roas</span><span>ctr</span></div></div>
-    <div class="card dataset"><div class="dataset-head"><div class="dataset-icon">💲</div><div><h4>price_history.csv</h4><span class="mono" style="font-size:10px;color:var(--muted)">1 row / product+month • 18,000 rows</span></div><span class="count-badge">18,000</span></div><p>Pricing, competitor index, elasticity, promo flag & monthly units. Drives margin tradeoff analysis.</p><div class="cols"><span>listed_price</span><span>competitor_price</span><span>is_promotional</span><span>price_elasticity</span></div></div>
-    <div class="card dataset"><div class="dataset-head"><div class="dataset-icon">🧾</div><div><h4>transactions.csv</h4><span class="mono" style="font-size:10px;color:var(--muted)">1 row / txn • 100,000 rows (FACT)</span></div><span class="count-badge" style="background:var(--accent)">100,000</span></div><p>Fact — 87,825 completed, 7,126 refunded, 5,049 cancelled. Valid revenue $50.22M across 2022-01-01→2024-12-31.</p><div class="cols"><span>transaction_id PK</span><span>quantity 220,365 units</span><span>revenue</span><span>profit $17.01M</span><span>channel</span></div></div>
-    <div class="card dataset"><div class="dataset-head"><div class="dataset-icon">↩️</div><div><h4>returns.csv</h4><span class="mono" style="font-size:10px;color:var(--muted)">1 row / return • 7,126 rows</span></div><span class="count-badge" style="background:var(--red)">7,126</span></div><p>Linked to transactions. Reasons: wrong_item, not_as_described, etc. Refunded $3.71M, 7.5% of valid orders.</p><div class="cols"><span>return_id PK</span><span>transaction_id FK</span><span>reason</span><span>refund_amount</span></div></div>
-  </div>
-</section>
-
-<section id="gold" class="container">
-  <div class="section-head"><h2>Gold Layer — 6 BI-Ready Tables (Real Aggregates)</h2><p>Denormalized at stated grain. Samples below are real rows computed from the CSVs using Gold logic.</p></div>
-  <div class="tabs">
-    <button class="tab active" data-tab="customer">gold_customer_360 — 8,000</button>
-    <button class="tab" data-tab="product">gold_product_performance — 500</button>
-    <button class="tab" data-tab="monthly">gold_sales_monthly_summary — 36</button>
-    <button class="tab" data-tab="category">gold_sales_by_category_channel</button>
-    <button class="tab" data-tab="marketing">gold_marketing_performance — 216</button>
-    <button class="tab" data-tab="inventory">gold_inventory_status — 500</button>
-  </div>
-
-  <div class="card" data-panel="customer">
-    <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center">
-      <div><b>gold_customer_360</b> <span class="mono" style="color:var(--muted);font-size:11px">— 1 row / customer • status: Active ≤90d / At Risk ≤180d / Churned / No Orders • ref 2024-12-31</span></div>
-      <input class="search" style="max-width:280px" placeholder="Filter real customers..." oninput="filterTable('tblCustomer',this.value)">
-    </div>
-    <div class="table-wrap" style="margin-top:10px"><table id="tblCustomer"><thead><tr><th>customer_id</th><th>name • country</th><th>orders (comp)</th><th>units • revenue</th><th>AOV</th><th>returns • rate</th><th>last order</th><th>status</th></tr></thead><tbody>
-      <tr><td class="mono">CUST01713</td><td>Elena Mueller • Italy (EUR) 41</td><td>1,671</td><td>3,970 • $828,918</td><td>$496.06</td><td>132 • 7.90%</td><td>2024-12-31</td><td><span class="badge-status active">Active</span></td></tr>
-      <tr><td class="mono">CUST01068</td><td>Sara Rossi • USA 57</td><td>876</td><td>2,258 • $538,729</td><td>$614.99</td><td>62 • 7.08%</td><td>2024-12-31</td><td><span class="badge-status active">Active</span></td></tr>
-      <tr><td class="mono">CUST03000</td><td>James Jackson • Spain 37</td><td>746</td><td>1,886 • $459,188</td><td>$615.53</td><td>71 • 9.52%</td><td>2024-12-29</td><td><span class="badge-status active">Active</span></td></tr>
-      <tr><td class="mono">CUST05248</td><td>David Harris • Spain 19</td><td>806</td><td>1,992 • $459,131</td><td>$569.64</td><td>57 • 7.07%</td><td>2024-12-28</td><td><span class="badge-status active">Active</span></td></tr>
-      <tr><td class="mono">CUST01593</td><td>Anna Dubois • USA 56</td><td>425</td><td>1,091 • $244,712</td><td>$575.79</td><td>32 • 7.53%</td><td>2024-12-31</td><td><span class="badge-status active">Active</span></td></tr>
-      <tr><td class="mono" style="color:var(--red)">— churned sample —</td><td colspan="7" class="mono" style="color:var(--muted)">Churned = 1,987 customers with last order >180d before 2024-12-31 • At Risk =1,318 • No Orders =32 (never purchased) — counts match real aggregation</td></tr>
-    </tbody></table></div>
-    <hr class="sep"><div class="mono" style="font-size:10px;color:var(--muted)">SQL: LEFT JOIN transactions grouped per customer + returns; customer_status CASE DATEDIFF(@ref_date, last_order_date) . Real counts: Active 4,663 (58.3%), At Risk 1,318 (16.5%), Churned 1,987 (24.8%), No Orders 32 (0.4%)</div>
-  </div>
-
-  <div class="card" data-panel="product" style="display:none">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px"><b>gold_product_performance</b> <span class="mono" style="color:var(--muted);font-size:11px">1 row / product • stock_status: OK / Below Reorder Point</span><input class="search" style="max-width:260px" placeholder="Filter real products..." oninput="filterTable('tblProduct',this.value)"></div>
-    <div class="table-wrap" style="margin-top:10px"><table id="tblProduct"><thead><tr><th>product_id • name</th><th>category</th><th>revenue • margin</th><th>units • avg price</th><th>returns • %</th><th>stock / reorder</th><th>status</th></tr></thead><tbody>
-      <tr><td class="mono">PROD0276<br><span style="font-size:10px;color:var(--muted)">ClearView Electronics Item 276</span></td><td>Electronics</td><td>$1,896,725 • 20.35%</td><td>2,548 • $744.40</td><td>76 • 2.98%</td><td>132 / 37</td><td><span class="badge-status active">OK</span></td></tr>
-      <tr><td class="mono">PROD0055<br><span style="font-size:10px;color:var(--muted)">ZenLife Clothing Item 55</span></td><td>Clothing</td><td>$1,170,647 • 52.42%</td><td>6,552 • $178.67</td><td>217 • 3.31%</td><td>468 / 95</td><td><span class="badge-status active">OK</span></td></tr>
-      <tr><td class="mono">PROD0216<br><span style="font-size:10px;color:var(--muted)">CoreBrand Electronics Item 216</span></td><td>Electronics</td><td>$881,478 • 20.31%</td><td>786 • $1,121</td><td>31 • 3.94%</td><td>7 / 11</td><td><span class="badge-status risk">Below Reorder</span></td></tr>
-      <tr><td class="mono">PROD0467<br><span style="font-size:10px;color:var(--muted)">FunZone Home Item 467</span></td><td>Home & Kitchen</td><td>$483,769 • 36.37%</td><td>1,602 • $301.98</td><td>46 • 2.87%</td><td>21 / 23</td><td><span class="badge-status risk">Below Reorder</span></td></tr>
-      <tr><td class="mono">PROD0008<br><span style="font-size:10px;color:var(--muted)">PrimeLine Beauty Item 8</span></td><td>Beauty & Health</td><td>$2,559 • 57.23%</td><td>239 • $10.71</td><td>9 • 3.77%</td><td>3 / 3</td><td><span class="badge-status risk">Below Reorder</span></td></tr>
-    </tbody></table></div>
-    <div class="mono" style="font-size:10px;color:var(--muted);margin-top:8px">Top by real revenue descending. Real: PROD0276 $1.90M is #1, PROD0055 $1.17M is #2. Total 500 rows — 440 OK, 60 Below Reorder Point, 0 Stockout (verifies inventory.csv).</div>
-  </div>
-
-  <div class="card" data-panel="monthly" style="display:none">
-    <b>gold_sales_monthly_summary</b> <span class="mono" style="color:var(--muted);font-size:11px">— 1 row / month • 36 months • company-wide • AOV = revenue / valid orders</span>
-    <div class="table-wrap" style="margin-top:10px"><table><thead><tr><th>year_month</th><th>completed</th><th>cancelled</th><th>refunded</th><th>units</th><th>revenue</th><th>profit</th><th>AOV</th><th>cust</th></tr></thead><tbody>
-      <tr><td class="mono">2024-07</td><td>2,408</td><td>146</td><td>192</td><td>6,027</td><td>$1,349,703</td><td>$455,613</td><td>$519.12</td><td>1,803</td></tr>
-      <tr><td class="mono">2024-08</td><td>2,345</td><td>126</td><td>202</td><td>5,922</td><td>$1,358,682</td><td>$462,764</td><td>$533.44</td><td>1,753</td></tr>
-      <tr><td class="mono">2024-09</td><td>2,413</td><td>152</td><td>168</td><td>6,238</td><td>$1,400,316</td><td>$482,997</td><td>$542.55</td><td>1,766</td></tr>
-      <tr><td class="mono">2024-10</td><td>2,590</td><td>161</td><td>209</td><td>6,492</td><td>$1,493,351</td><td>$508,431</td><td>$533.53</td><td>1,926</td></tr>
-      <tr><td class="mono">2024-11</td><td>3,381</td><td>197</td><td>268</td><td>8,482</td><td>$1,933,448</td><td>$660,437</td><td>$529.86</td><td>2,335</td></tr>
-      <tr style="background:rgba(16,185,129,.07)"><td class="mono"><b>2024-12</b></td><td><b>3,903</b></td><td>233</td><td>338</td><td>9,831</td><td><b>$2,110,610</b></td><td><b>$726,136</b></td><td>$497.67</td><td>2,618</td></tr>
-    </tbody></table></div>
-    <div class="mono" style="font-size:10px;color:var(--muted);margin-top:6px">Valid orders = completed + refunded (SQL business rule). Holiday lift Nov→Dec: +9.2% revenue, +15.9% units, AOV dips due to promo mix (matches price_history is_promotional).</div>
-  </div>
-
-  <div class="card" data-panel="category" style="display:none">
-    <b>gold_sales_by_category_channel</b> <span class="mono" style="color:var(--muted);font-size:11px">1 row / month+category+channel — 6 channels × 7 categories × 36 months — sample 2024-12 real</span>
-    <div class="table-wrap" style="margin-top:10px"><table><thead><tr><th>year_month</th><th>category</th><th>channel</th><th>orders</th><th>units</th><th>revenue</th></tr></thead><tbody>
-      <tr><td class="mono">2024-12</td><td>Clothing</td><td>organic_search</td><td>314</td><td>—</td><td>part of $8.40M total</td></tr>
-      <tr><td class="mono">2024-12</td><td>Home & Kitchen</td><td>organic_search</td><td>195</td><td>—</td><td>—</td></tr>
-      <tr><td class="mono">2024-12</td><td>Electronics</td><td>organic_search</td><td>182</td><td>—</td><td>$23.17M total (46.1%)</td></tr>
-      <tr><td class="mono" colspan="6" style="color:var(--muted);font-size:11px">Full grain has 6 channels: organic_search, paid_search, social_media, email, direct, referral. Use filters below to slice real category × channel revenue (see dashboard).</td></tr>
-    </tbody></table></div>
-  </div>
-
-  <div class="card" data-panel="marketing" style="display:none">
-    <b>gold_marketing_performance</b> <span class="mono" style="color:var(--muted);font-size:11px">reported vs actual sales outcome — real variance shows systematic over-attribution</span>
-    <div class="table-wrap" style="margin-top:10px"><table><thead><tr><th>year_month</th><th>channel</th><th>spend</th><th>roas (reported)</th><th>reported rev</th><th>actual sales rev</th><th>variance %</th></tr></thead><tbody>
-      <tr><td class="mono">2024-12</td><td>organic_search</td><td>$9,677</td><td>63.88×</td><td>$618,181</td><td>$588,758</td><td style="color:var(--red)">-4.76%</td></tr>
-      <tr><td class="mono">2024-12</td><td>paid_search</td><td>$87,470</td><td>5.40×</td><td>$472,127</td><td>$453,742</td><td style="color:var(--red)">-3.89%</td></tr>
-      <tr><td class="mono">2024-12</td><td>social_media</td><td>$62,401</td><td>6.39×</td><td>$398,850</td><td>$380,869</td><td style="color:var(--red)">-4.51%</td></tr>
-      <tr><td class="mono">2024-12</td><td>email</td><td>$5,178</td><td>61.69×</td><td>$319,396</td><td>$300,878</td><td style="color:var(--red)">-5.80%</td></tr>
-      <tr><td class="mono">2024-12</td><td>direct</td><td>$1,776</td><td>129.55×</td><td>$230,124</td><td>$213,615</td><td style="color:var(--red)">-7.17%</td></tr>
-      <tr><td class="mono">2024-12</td><td>referral</td><td>$15,576</td><td>11.75×</td><td>$182,940</td><td>$172,749</td><td style="color:var(--red)">-5.57%</td></tr>
-    </tbody></table></div>
-    <div class="mono" style="font-size:10px;color:var(--muted);margin-top:6px">Actual = JOIN transactions on year_month+channel (valid status only). Variance = actual - reported. All 6 channels negative: platform reports 3.9–7.2% higher than sales ledger.</div>
-  </div>
-
-  <div class="card" data-panel="inventory" style="display:none">
-    <b>gold_inventory_status</b> <span class="mono" style="color:var(--muted);font-size:11px">1 row / product • days_of_supply = stock / avg_daily_90d (last 90 days to 2024-12-31)</span>
-    <div class="table-wrap" style="margin-top:10px"><table><thead><tr><th>product_id • category</th><th>warehouse</th><th>stock / reorder</th><th>lead days</th><th>avg daily 90d</th><th>days of supply</th><th>status</th></tr></thead><tbody>
-      <tr><td class="mono">PROD0001 Books</td><td>US-West</td><td>16 / 4</td><td>16</td><td>0.344</td><td>46.5</td><td><span class="badge-status active">Healthy</span></td></tr>
-      <tr><td class="mono">PROD0216 Electronics</td><td>—</td><td>7 / 11</td><td>8</td><td>0.489</td><td>14.3</td><td><span class="badge-status risk">Below Reorder Point</span></td></tr>
-      <tr><td class="mono">PROD0008 Beauty & Health</td><td>US-West</td><td>3 / 3</td><td>7</td><td>0.200</td><td>15.0</td><td><span class="badge-status risk">Below Reorder Point</span></td></tr>
-      <tr><td class="mono">PROD0467 Home & Kitchen</td><td>—</td><td>21 / 23</td><td>6</td><td>0.711</td><td>29.5</td><td><span class="badge-status risk">Below Reorder Point</span></td></tr>
-    </tbody></table></div>
-    <div class="mono" style="font-size:10px;color:var(--muted);margin-top:6px">Real counts: Healthy 440, Below Reorder 60, Stockout 0. Avg daily computed from 2024-10-02→2024-12-31 (90d window) — matches gg_gold_load.sql.</div>
-  </div>
-</section>
-
-<section id="dashboard" class="container">
-  <div class="section-head"><h2>Interactive Dashboard — 100% Real Data</h2><p>Every chart reads from the Gold aggregates above. No synthetic series — try the filters (real category × channel slices).</p></div>
-  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-    <select id="rangeFilter" class="search" style="max-width:180px;padding:8px"><option value="12">Last 12 months</option><option value="36">All 36 months</option><option value="6">Last 6 months</option></select>
-    <span class="badge mono" style="background:rgba(16,185,129,.12);border-color:rgba(16,185,129,.3);color:var(--green)">✔ Live Chart.js • real CSV aggregates</span>
-    <span class="badge mono">ref_date 2024-12-31 • data raw/ verified</span>
-  </div>
-  <div class="chart-grid">
-    <div class="chart-card"><h4>Monthly Revenue vs Profit (real) <span>gold_sales_monthly_summary • 2022-01 → 2024-12</span></h4><canvas id="revChart" height="230"></canvas></div>
-    <div class="chart-card"><h4>Revenue by Category (real) <span>$50.22M total — 7 categories</span></h4><canvas id="catChart" height="230"></canvas></div>
-  </div>
-  <div class="chart-grid" style="margin-top:12px">
-    <div class="chart-card"><h4>Marketing: Reported vs Actual Revenue — 2024-12 (real) <span>gold_marketing_performance</span></h4><canvas id="mktChart" height="230"></canvas></div>
-    <div class="chart-card"><h4>Inventory Health (real) <span>gold_inventory_status • 500 SKUs</span></h4><canvas id="invChart" height="230"></canvas></div>
-  </div>
-  <div class="grid-2" style="margin-top:12px">
-    <div class="chart-card"><h4>Customer Segmentation (real) <span>gold_customer_360 • ref 2024-12-31</span></h4><canvas id="custChart" height="220"></canvas><div class="mono" style="font-size:10px;color:var(--muted);margin-top:8px;text-align:center">Active 4,663 • At Risk 1,318 • Churned 1,987 • No Orders 32 — computed via DATEDIFF(@ref_date, last_order)</div></div>
-    <div class="card" style="display:flex;flex-direction:column;gap:10px">
-      <h4 style="font-size:13px">Key Insights — Derived from Real Data</h4>
-      <div class="insight"><h4>📈 Real seasonality: Nov→Dec +9.2% revenue</h4><p>2024-11 $1.93M → 2024-12 $2.11M, units +15.9% (8,482→9,831). Matches <code class="mono">marketing_spend.month_multiplier</code> and price_history promos.</p></div>
-      <div class="insight"><h4>💸 Every channel over-reports ~4–7%</h4><p>2024-12 variance: organic -4.76%, email -5.80%, direct -7.17%. Gold reconciles reported ROAS vs ledger truth — critical for spend decisions.</p></div>
-      <div class="insight"><h4>🔄 Returns 7.5% overall, uniform</h4><p>Not apparel-skewed in this synthetic generator: product return rates cluster 2–4% (PROD0276 2.98%, PROD0055 3.31%). Total refunded $3.71M.</p></div>
-      <div class="insight"><h4>⚠️ 60 SKUs below reorder, 0 stockout — proactive</h4><p>Healthy 440/500 (88%). Example: PROD0216 7/11 (lead 8d, dos 14.3) — next reorder already calculable from 90d velocity.</p></div>
-      <div class="insight"><h4>👤 LTV concentration real</h4><p>Top customer CUST01713 $828k lifetime (1,671 orders) — outlier vs median ~$5k. Premium flag not strongest predictor; frequency is.</p></div>
-      <div class="insight"><h4>🏆 Electronics dominates revenue share</h4><p>Electronics $23.17M (46.1%) vs Clothing $8.40M (16.7%). High unit price ($592 avg cost) but low margin 20% vs Clothing 52%.</p></div>
-    </div>
-  </div>
-</section>
-
-<section class="container">
-  <div class="grid-2">
-    <div class="card">
-      <h3 style="font-size:13px;margin-bottom:8px">Tech Stack & How Gold is Computed (real SQL)</h3>
-      <div class="stack">
-        <span class="stack-item">🐬 MySQL 8.0 window funcs</span>
-        <span class="stack-item">🐍 Python Pandas ingest</span>
-        <span class="stack-item">📊 Power BI pbix reads gg_gold</span>
-        <span class="stack-item">🗂️ 8 CSVs • 100k txns</span>
-        <span class="stack-item">⭐ 6 Gold tables • indexed</span>
-      </div>
-      <hr class="sep">
-      <ul style="font-size:12px;color:var(--muted);padding-left:16px">
-        <li><b style="color:var(--text)">Valid sales</b> = status IN ('completed','refunded'); cancelled (5,049) excluded — matches gg_gold_load.sql line 20.</li>
-        <li><b style="color:var(--text)">@ref_date = MAX(date) = 2024-12-31</b> — swap to CURDATE() for live feed.</li>
-        <li><b style="color:var(--text)">Customer status:</b> diff ≤90 Active, ≤180 At Risk, else Churned; no valid orders → No Orders (32 customers).</li>
-        <li><b style="color:var(--text)">90-day velocity:</b> SUM(quantity)/90 where date > @ref_date -90d → days_of_supply.</li>
-      </ul>
-    </div>
-    <div id="how-to-run" class="card">
-      <h3 style="font-size:13px;margin-bottom:8px">How to Reproduce — Same Numbers Locally</h3>
-      <div class="code-block mono"># 1) Bronze — load raw CSVs (real counts verified)<br>mysql -u you -p &lt; sql/bronze/bronze_mysql_schema.sql<br>python3 sql/bronze/bronze_mysql_load.py  # 100k transactions<br><br># 2) Silver — clean & dedupe<br>mysql -u you -p &lt; sql/silver/ss_silver_schema.sql<br>mysql -u you -p &lt; sql/silver/ss_silver_load.sql<br><br># 3) Gold — aggregate (reproduces every chart above)<br>mysql -u you -p &lt; sql/gold/gg_gold_schema.sql<br>mysql -u you -p &lt; sql/gold/gg_gold_load.sql<br><br># 4) SELECT * FROM gg_gold.gold_sales_monthly_summary; -- 36 rows</div>
-      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
-        <a class="btn btn-primary" href="https://github.com/Hamed7848/E-commerce-supply-chain" target="_blank">Clone Repo</a>
-        <a class="btn btn-ghost mono" href="https://raw.githubusercontent.com/Hamed7848/E-commerce-supply-chain/main/data%20raw/transactions.csv" target="_blank">Raw transactions.csv ↗</a>
+      <div class="mt-3 grid grid-cols-3 gap-2 text-center">
+        <div class="bg-[#151d2b] border border-[#232f45] rounded-xl p-3"><div class="text-[10px] tracking-widest uppercase font-bold text-[#8b9bb4]">Rows</div><div data-bind="overview.records" class="font-mono text-sm font-bold mt-1">[N ROWS]</div></div>
+        <div class="bg-[#151d2b] border border-[#232f45] rounded-xl p-3"><div class="text-[10px] tracking-widest uppercase font-bold text-[#8b9bb4]">Columns</div><div data-bind="overview.columns" class="font-mono text-sm font-bold mt-1">[N COLS]</div></div>
+        <div class="bg-[#151d2b] border border-[#232f45] rounded-xl p-3"><div class="text-[10px] tracking-widest uppercase font-bold text-[#8b9bb4]">Duration</div><div data-bind="overview.duration" class="font-mono text-sm font-bold mt-1">[DURATION]</div></div>
       </div>
     </div>
   </div>
 </section>
 
-<section class="container">
-  <div class="card" style="background:linear-gradient(135deg,rgba(16,185,129,.10),rgba(59,130,246,.08));border-color:rgba(16,185,129,.30)">
-    <div style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center">
-      <div>
-        <h3 style="font-size:14px">Validation Statement — Interview-Ready</h3>
-        <p style="color:var(--muted);font-size:12px;max-width:680px;margin-top:6px">All KPIs, charts, and Gold table samples on this page are <b style="color:var(--text)">aggregates of the 8 real CSVs in <code class="mono">data raw/</code></b> (8,000 customers, 500 products, 100,000 transactions, etc.). No placeholder values. Computed with the same business rules as <code class="mono">sql/gold/gg_gold_load.sql</code>. Open <code class="mono">real_kpis.json</code> beside this HTML to audit every number. Synthetic data — no PII — but pipeline shape is production-faithful.</p>
+<!-- 2 PROJECT OVERVIEW -->
+<section id="overview" class="max-w-[1180px] mx-auto px-6 py-8">
+  <div class="flex flex-wrap items-end justify-between gap-4 mb-4">
+    <h2 class="text-2xl font-extrabold tracking-tight">Project Overview</h2>
+    <p class="text-sm text-[#8b9bb4] max-w-[52ch]">High-level snapshot — objective, business context, dataset, stack, timeline.</p>
+  </div>
+  <div class="grid lg:grid-cols-[1.4fr_.6fr] gap-4">
+    <div class="bg-[#151d2b] border border-[#232f45] rounded-2xl p-5">
+      <h3 class="text-sm font-bold">Objective</h3>
+      <p data-bind="overview.objective" class="text-sm text-[#8b9bb4] mt-2">[PROJECT OBJECTIVE — what you wanted to achieve and success criteria]</p>
+      <div class="mt-4 grid sm:grid-cols-3 gap-3">
+        <div class="bg-[#0a0e14] border border-[#232f45] rounded-xl p-3"><div class="text-[10px] tracking-widest uppercase font-bold text-[#8b9bb4]">Dataset</div><div data-bind="overview.datasetName" class="text-sm font-semibold mt-1">[DATASET NAME / SOURCE]</div></div>
+        <div class="bg-[#0a0e14] border border-[#232f45] rounded-xl p-3"><div class="text-[10px] tracking-widest uppercase font-bold text-[#8b9bb4]">Size</div><div class="text-sm font-mono font-bold mt-1"><span data-bind="overview.records">[ROWS]</span> • <span data-bind="overview.columns">[COLS]</span></div></div>
+        <div class="bg-[#0a0e14] border border-[#232f45] rounded-xl p-3"><div class="text-[10px] tracking-widest uppercase font-bold text-[#8b9bb4]">Timeline</div><div data-bind="overview.duration" class="text-sm font-semibold mt-1">[PROJECT DURATION]</div></div>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap"><span class="badge" style="background:rgba(16,185,129,.15);color:var(--green);border-color:rgba(16,185,129,.3)">No dummy data</span><span class="badge">Row-count verified</span><span class="badge">Gold logic mirrored</span></div>
+    </div>
+    <div class="bg-[#151d2b] border border-[#232f45] rounded-2xl p-5">
+      <h3 class="text-sm font-bold">Tools & Technologies</h3>
+      <div id="overviewTools" class="mt-3 flex flex-wrap gap-2"></div>
+      <hr class="border-[#232f45] my-4">
+      <h4 class="text-xs font-bold tracking-widest uppercase text-[#8b9bb4]">Quick links</h4>
+      <div class="mt-2 grid grid-cols-1 gap-2">
+        <a data-link="github" href="#" target="_blank" class="flex items-center justify-between px-3 py-2.5 rounded-xl border border-[#232f45] bg-white/5 hover:bg-white/10 transition text-sm"><span>GitHub Repository</span><span>↗</span></a>
+        <a data-link="dataset" href="#" target="_blank" class="flex items-center justify-between px-3 py-2.5 rounded-xl border border-[#232f45] bg-white/5 hover:bg-white/10 transition text-sm"><span>Dataset</span><span>↗</span></a>
+        <a data-link="liveDashboard" href="#" target="_blank" class="flex items-center justify-between px-3 py-2.5 rounded-xl border border-[#232f45] bg-white/5 hover:bg-white/10 transition text-sm"><span>Live Dashboard</span><span>↗</span></a>
+      </div>
     </div>
   </div>
 </section>
 
-<footer>
-  <div class="container" style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center">
-    <div>Page view for <a href="https://github.com/Hamed7848/E-commerce-supply-chain" target="_blank" style="color:var(--accent);text-decoration:underline">Hamed7848/E-commerce-supply-chain</a> • MIT • <span class="mono">index.html + real_kpis.json — single-file deploy</span> • Data: 2022-01-01 → 2024-12-31</div>
-    <div class="mono">© 2026 • Audit: check browser devtools → view-source → search REAL_DATA or open real_kpis.json</div>
+<!-- 3 BUSINESS PROBLEM -->
+<section id="problem" class="max-w-[1180px] mx-auto px-6 py-8">
+  <h2 class="text-2xl font-extrabold tracking-tight">Business Problem</h2>
+  <div class="mt-4 grid lg:grid-cols-3 gap-4">
+    <div class="lg:col-span-2 bg-[#151d2b] border border-[#232f45] rounded-2xl p-5">
+      <div class="text-[11px] tracking-widest uppercase font-bold text-[#3b82f6]">Problem Statement</div>
+      <h3 data-bind="businessProblem.headline" class="mt-2 text-lg font-bold leading-snug">[WHAT BUSINESS PROBLEM ARE WE TRYING TO SOLVE?]</h3>
+      <p data-bind="businessProblem.whyImportant" class="mt-3 text-sm text-[#8b9bb4]">[WHY IS THIS PROBLEM IMPORTANT? — business impact, cost, opportunity. Replace with your real context.]</p>
+    </div>
+    <div class="bg-[#151d2b] border border-[#232f45] rounded-2xl p-5">
+      <h4 class="text-sm font-bold">Key Questions</h4>
+      <ul id="businessQuestions" class="mt-3 space-y-2 text-sm text-[#8b9bb4] list-disc pl-5"></ul>
+      <div class="mt-4 text-xs font-mono text-[#8b9bb4] border border-dashed border-[#232f45] rounded-xl p-3 bg-[#0a0e14]">Tip: Frame 3–5 questions as <i>“What/Why/How”</i> that your analysis will answer. Keep placeholders until real questions are defined.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 4 DATA UNDERSTANDING -->
+<section id="data" class="max-w-[1180px] mx-auto px-6 py-8">
+  <div class="flex flex-wrap items-end justify-between gap-4 mb-4">
+    <h2 class="text-2xl font-extrabold tracking-tight">Data Understanding</h2>
+    <span class="text-xs font-mono px-3 py-1 rounded-full border border-[#232f45] bg-white/5 text-[#8b9bb4]">Source: <span data-bind="dataUnderstanding.source">[DATASET SOURCE]</span></span>
+  </div>
+  <div class="grid lg:grid-cols-[.9fr_1.1fr] gap-4">
+    <div class="bg-[#151d2b] border border-[#232f45] rounded-2xl p-5">
+      <div class="grid grid-cols-2 gap-3">
+        <div class="bg-[#0a0e14] border border-[#232f45] rounded-xl p-3 text-center"><div class="text-[10px] tracking-widest uppercase font-bold text-[#8b9bb4]">Rows</div><div data-bind="dataUnderstanding.rows" class="font-mono text-lg font-bold mt-1">[INSERT ROWS]</div></div>
+        <div class="bg-[#0a0e14] border border-[#232f45] rounded-xl p-3 text-center"><div class="text-[10px] tracking-widest uppercase font-bold text-[#8b9bb4]">Columns</div><div data-bind="dataUnderstanding.cols" class="font-mono text-lg font-bold mt-1">[INSERT COLS]</div></div>
+      </div>
+      <p data-bind="dataUnderstanding.description" class="mt-4 text-sm text-[#8b9bb4]">[Short description of the dataset — what each row represents, time range, grain.]</p>
+      <h4 class="mt-4 text-xs font-bold tracking-widest uppercase text-[#8b9bb4]">Important Columns</h4>
+      <div id="dataColumns" class="mt-2 space-y-2"></div>
+    </div>
+    <div class="bg-[#151d2b] border border-[#232f45] rounded-2xl p-5">
+      <div class="flex items-center justify-between">
+        <h4 class="text-sm font-bold">Dataset Preview</h4>
+        <span class="text-[10px] tracking-widest uppercase font-bold px-2 py-1 rounded-full border border-[#232f45] bg-white/5 text-[#8b9bb4]">[INSERT PREVIEW]</span>
+      </div>
+      <div class="mt-3 overflow-auto rounded-xl border border-[#232f45]">
+        <table class="w-full text-xs min-w-[520px]">
+          <thead class="bg-white/5 text-[#8b9bb4]"><tr id="previewHead"></tr></thead>
+          <tbody id="previewBody" class="divide-y divide-[#232f45]"></tbody>
+        </table>
+      </div>
+      <p class="mt-3 text-xs text-[#8b9bb4]">Replace <code class="font-mono bg-white/5 px-1 py-0.5 rounded border border-[#232f45]">[val]</code> cells with real sample rows (first 3–5 rows). Keep types consistent.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 5 DATA CLEANING -->
+<section id="cleaning" class="max-w-[1180px] mx-auto px-6 py-8">
+  <h2 class="text-2xl font-extrabold tracking-tight">Data Cleaning</h2>
+  <p class="text-sm text-[#8b9bb4] mt-1">Step-by-step — what was cleaned, why, and how. No fabricated results.</p>
+  <div id="cleaningGrid" class="mt-4 grid md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+  <div class="mt-4 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 text-xs text-amber-200/90">All steps above are placeholders. Document your real process: code snippets, before/after counts, decisions. Example: “Dropped 42 rows (0.4%) with null <code class="font-mono bg-white/10 px-1 rounded">customer_id</code>”.</div>
+</section>
+
+<!-- 6 EDA -->
+<section id="eda" class="max-w-[1180px] mx-auto px-6 py-8">
+  <div class="flex flex-wrap items-end justify-between gap-4 mb-4">
+    <h2 class="text-2xl font-extrabold tracking-tight">Exploratory Data Analysis</h2>
+    <p class="text-sm text-[#8b9bb4]">KPIs + charts — the analysis core. Each chart is a placeholder container.</p>
+  </div>
+  <div id="edaKpis" class="grid grid-cols-2 lg:grid-cols-4 gap-3"></div>
+  <div id="edaCharts" class="mt-6 grid lg:grid-cols-2 gap-4"></div>
+</section>
+
+<!-- 7 KEY INSIGHTS -->
+<section id="insights" class="max-w-[1180px] mx-auto px-6 py-8">
+  <h2 class="text-2xl font-extrabold tracking-tight">Key Insights</h2>
+  <p class="text-sm text-[#8b9bb4] mt-1">Strongest findings — each card = one insight + supporting KPI. Do not invent business conclusions.</p>
+  <div id="insightsGrid" class="mt-4 grid md:grid-cols-2 gap-4"></div>
+</section>
+
+<!-- 8 RECOMMENDATIONS -->
+<section id="recommendations" class="max-w-[1180px] mx-auto px-6 py-8">
+  <h2 class="text-2xl font-extrabold tracking-tight">Business Recommendations</h2>
+  <p class="text-sm text-[#8b9bb4] mt-1">Insights → actions. Each recommendation links to a finding, reason, and expected impact (placeholder until validated).</p>
+  <div id="recGrid" class="mt-4 grid gap-4"></div>
+</section>
+
+<!-- 9 TECHNICAL PROCESS -->
+<section id="process" class="max-w-[1180px] mx-auto px-6 py-8">
+  <h2 class="text-2xl font-extrabold tracking-tight">Technical Process</h2>
+  <div class="mt-4 bg-[#151d2b] border border-[#232f45] rounded-2xl p-5">
+    <div class="flex flex-wrap items-center justify-center gap-2 text-xs font-semibold">
+      <span class="px-3 py-2 rounded-full border border-[#232f45] bg-white/5">Data Collection</span><span class="text-[#8b9bb4]">→</span>
+      <span class="px-3 py-2 rounded-full border border-[#232f45] bg-white/5">Data Cleaning</span><span class="text-[#8b9bb4]">→</span>
+      <span class="px-3 py-2 rounded-full border border-[#232f45] bg-white/5">Transformation</span><span class="text-[#8b9bb4]">→</span>
+      <span class="px-3 py-2 rounded-full border border-[#232f45] bg-white/5">Exploratory Analysis</span><span class="text-[#8b9bb4]">→</span>
+      <span class="px-3 py-2 rounded-full border border-[#232f45] bg-white/5">Visualization</span><span class="text-[#8b9bb4]">→</span>
+      <span class="px-3 py-2 rounded-full bg-gradient-to-br from-[#3b82f6] to-[#06b6d4] text-white">Insights</span><span class="text-[#8b9bb4]">→</span>
+      <span class="px-3 py-2 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300">Recommendations</span>
+    </div>
+    <div class="mt-6">
+      <h4 class="text-xs font-bold tracking-widest uppercase text-[#8b9bb4]">Technologies Used</h4>
+      <div id="techStack" class="mt-3 flex flex-wrap gap-2"></div>
+    </div>
+  </div>
+</section>
+
+<!-- 10 GALLERY -->
+<section id="gallery" class="max-w-[1180px] mx-auto px-6 py-8">
+  <h2 class="text-2xl font-extrabold tracking-tight">Project Gallery</h2>
+  <p class="text-sm text-[#8b9bb4] mt-1">Dashboards, charts, code — placeholder images. Replace with real screenshots (1600×1000 recommended).</p>
+  <div id="galleryGrid" class="mt-4 grid md:grid-cols-2 gap-4"></div>
+</section>
+
+<!-- 11 RESULTS -->
+<section id="results" class="max-w-[1180px] mx-auto px-6 py-8">
+  <h2 class="text-2xl font-extrabold tracking-tight">Project Results</h2>
+  <div class="mt-4 grid lg:grid-cols-3 gap-4">
+    <div class="lg:col-span-2 bg-[#151d2b] border border-[#232f45] rounded-2xl p-5">
+      <h3 class="text-sm font-bold">Main Findings</h3>
+      <p data-bind="results.summary" class="text-sm text-[#8b9bb4] mt-2">[Main findings summary — placeholder until real results are inserted. Summarize what the analysis actually proved.]</p>
+      <div class="mt-4 grid sm:grid-cols-3 gap-3" id="resultsKpis"></div>
+    </div>
+    <div class="bg-[#151d2b] border border-[#232f45] rounded-2xl p-5">
+      <h3 class="text-sm font-bold">Business Impact</h3>
+      <p data-bind="results.impact" class="text-sm text-[#8b9bb4] mt-2">[Business impact — placeholder. e.g., “Identified segment worth $X” — insert only after real calculation.]</p>
+      <hr class="border-[#232f45] my-4">
+      <h3 class="text-sm font-bold">What I Learned</h3>
+      <p data-bind="results.learned" class="text-sm text-[#8b9bb4] mt-2">[What was learned — tools, methods, domain knowledge.]</p>
+    </div>
+  </div>
+</section>
+
+<!-- 12 LINKS -->
+<section id="links" class="max-w-[1180px] mx-auto px-6 py-8">
+  <div class="bg-gradient-to-br from-[#3b82f6]/10 to-[#06b6d4]/10 border border-[#3b82f6]/20 rounded-2xl p-6">
+    <h2 class="text-xl font-extrabold tracking-tight">Project Links</h2>
+    <p class="text-sm text-[#8b9bb4] mt-1">Replace placeholder URLs in <code class="font-mono bg-white/5 px-1.5 py-0.5 rounded border border-[#232f45]">portfolio-data.js → cta / links</code></p>
+    <div class="mt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <a data-link="github" href="#" target="_blank" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-[#151d2b] border border-[#232f45] hover:border-[#3b82f6]/40 transition"><span class="w-9 h-9 rounded-lg bg-white/5 border border-[#232f45] grid place-items-center">⬡</span><div><div class="text-sm font-bold">GitHub Repository</div><div class="text-xs font-mono text-[#8b9bb4] truncate">[INSERT GITHUB URL]</div></div></a>
+      <a data-link="dataset" href="#" target="_blank" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-[#151d2b] border border-[#232f45] hover:border-[#3b82f6]/40 transition"><span class="w-9 h-9 rounded-lg bg-white/5 border border-[#232f45] grid place-items-center">🗃</span><div><div class="text-sm font-bold">Dataset</div><div class="text-xs font-mono text-[#8b9bb4] truncate">[INSERT DATASET URL]</div></div></a>
+      <a data-link="liveDashboard" href="#" target="_blank" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-[#151d2b] border border-[#232f45] hover:border-[#3b82f6]/40 transition"><span class="w-9 h-9 rounded-lg bg-white/5 border border-[#232f45] grid place-items-center">📊</span><div><div class="text-sm font-bold">Live Dashboard</div><div class="text-xs font-mono text-[#8b9bb4] truncate">[INSERT DASHBOARD URL]</div></div></a>
+      <a data-link="docs" href="#" target="_blank" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-[#151d2b] border border-[#232f45] hover:border-[#3b82f6]/40 transition"><span class="w-9 h-9 rounded-lg bg-white/5 border border-[#232f45] grid place-items-center">📄</span><div><div class="text-sm font-bold">Documentation</div><div class="text-xs font-mono text-[#8b9bb4] truncate">[INSERT DOCS URL]</div></div></a>
+    </div>
+  </div>
+</section>
+
+<footer class="border-t border-[#232f45] mt-6">
+  <div class="max-w-[1180px] mx-auto px-6 py-6 flex flex-wrap items-center justify-between gap-4 text-xs text-[#8b9bb4]">
+    <div>Built with semantic HTML + Tailwind CDN — no build step. Data separated in <code class="font-mono bg-white/5 px-1.5 py-0.5 rounded border border-[#232f45]">portfolio-data.js</code></div>
+    <div class="font-mono">© 2026 • Replace all <code class="bg-white/5 px-1 rounded border border-[#232f45]">[PLACEHOLDERS]</code> before publishing</div>
   </div>
 </footer>
 
+<script src="portfolio-data.js"></script>
 <script>
-const REAL_DATA={
-  kpis:{total_rev:50223034.95,valid_orders:94951,completed:87825,cancelled:5049,refunded:7126,total_units:220365,margin:33.87,aov:528.94,total_returns:7126,refunded_usd:3714216.25,return_rate:7.5,spend:3813593.08,reported_rev:52871960.04,roas_actual:13.17,stock_below:60,healthy:440},
-  monthly:[
-    {ym:'2022-01',rev:999827.79,profit:340971.41},{ym:'2022-02',rev:819751.48,profit:281213.53},{ym:'2022-03',rev:1228955.47,profit:417102.29},
-    {ym:'2022-04',rev:1375112.32,profit:449223.81},{ym:'2022-05',rev:1299087.16,profit:447398.64},{ym:'2022-06',rev:1275245.15,profit:430117.98},
-    {ym:'2022-07',rev:1476462.23,profit:497952.15},{ym:'2022-08',rev:1302418.7,profit:446130.98},{ym:'2022-09',rev:1358664.53,profit:459138.58},
-    {ym:'2022-10',rev:1487823.32,profit:503030.89},{ym:'2022-11',rev:1963329.98,profit:651986.32},{ym:'2022-12',rev:2193555.24,profit:753188.67},
-    {ym:'2023-01',rev:1049933.29,profit:358574.22},{ym:'2023-02',rev:891506.13,profit:295668.8},{ym:'2023-03',rev:1120260.68,profit:379177.14},
-    {ym:'2023-04',rev:1152016.9,profit:393669.06},{ym:'2023-05',rev:1328601.43,profit:455046.2},{ym:'2023-06',rev:1281274.91,profit:428891.85},
-    {ym:'2023-07',rev:1422002.08,profit:472705.71},{ym:'2023-08',rev:1315048.66,profit:452889.03},{ym:'2023-09',rev:1385403.38,profit:474954.71},
-    {ym:'2023-10',rev:1558629.91,profit:514737.43},{ym:'2023-11',rev:1892850.08,profit:626938.47},{ym:'2023-12',rev:2298695.93,profit:780228.92},
-    {ym:'2024-01',rev:1010217.95,profit:341635.5},{ym:'2024-02',rev:928706.45,profit:311872.65},{ym:'2024-03',rev:1252805.08,profit:429966.17},
-    {ym:'2024-04',rev:1279437.99,profit:427731.21},{ym:'2024-05',rev:1349102.84,profit:462841.87},{ym:'2024-06',rev:1280199.81,profit:427442.84},
-    {ym:'2024-07',rev:1349702.89,profit:455613.39},{ym:'2024-08',rev:1358681.6,profit:462764.28},{ym:'2024-09',rev:1400315.66,profit:482996.89},
-    {ym:'2024-10',rev:1493350.73,profit:508430.76},{ym:'2024-11',rev:1933447.57,profit:660437.43},{ym:'2024-12',rev:2110609.63,profit:726136.08}
-  ],
-  categories:{labels:['Electronics','Clothing','Sports & Outdoors','Home & Kitchen','Beauty & Health','Toys & Games','Books'],data:[23169655.16,8400512.96,7332092.33,6780299.51,2533756.7,1341943.09,664775.2]},
-  marketing_2024_12:{labels:['organic_search','paid_search','social_media','email','direct','referral'],spend:[9677.47,87469.67,62400.99,5177.58,1776.29,15575.86],reported:[618181.4,472126.62,398849.69,319395.52,230124.38,182939.59],actual:[588757.72,453742.0,380868.62,300877.5,213615.05,172748.74]},
-  inventory:{healthy:440,below:60,stockout:0},
-  customer:{labels:['Active','At Risk','Churned','No Orders'],data:[4663,1318,1987,32]}
-};
-function filterTable(id,q){
-  q=(q||'').toLowerCase();
-  document.querySelectorAll('#'+id+' tbody tr').forEach(tr=>{
-    tr.style.display=tr.textContent.toLowerCase().includes(q)?'':'none';
+// ——— helpers ———
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+function bindPlaceholders(){
+  const d = window.PORTFOLIO_DATA;
+  $$('[data-bind]').forEach(el=>{
+    const path = el.getAttribute('data-bind').split('.');
+    let val = d; for(const p of path) val = val?.[p];
+    if(val !== undefined) el.textContent = val;
+  });
+  $$('[data-link]').forEach(a=>{
+    const key = a.getAttribute('data-link');
+    const url = d.cta?.[key] || d.links?.[key];
+    if(url && !url.includes('[INSERT')) a.href = url;
+    else { a.href = "#links"; a.addEventListener('click',e=>{ if(a.href.endsWith('#links')) { e.preventDefault(); document.getElementById('links').scrollIntoView({behavior:'smooth'});}})}
   });
 }
-document.querySelectorAll('.tab').forEach(btn=>{
-  btn.addEventListener('click',()=>{
-    document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    const tab=btn.dataset.tab;
-    document.querySelectorAll('[data-panel]').forEach(p=>p.style.display=p.dataset.panel===tab?'':'none');
+function renderTools(){
+  const d = window.PORTFOLIO_DATA;
+  const hero = $('#heroTools'); hero.innerHTML='';
+  (d.toolsHero||[]).forEach(t=>{
+    const s=document.createElement('span');
+    s.className='text-xs font-mono px-2.5 py-1 rounded-full border border-[#232f45] bg-white/5 text-[#8b9bb4]';
+    s.textContent=t; hero.appendChild(s);
   });
-});
-// Charts with real data
-let revChart, catChart;
-function renderRev(range){
-  const months=REAL_DATA.monthly.slice(-range);
-  const labels=months.map(m=>m.ym);
-  const rev=months.map(m=>m.rev);
-  const profit=months.map(m=>m.profit);
-  if(revChart) revChart.destroy();
-  revChart=new Chart(document.getElementById('revChart'),{
-    type:'line',
-    data:{labels,datasets:[
-      {label:'Revenue',data:rev,borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,.14)',tension:.32,fill:true,pointRadius:2},
-      {label:'Profit',data:profit,borderColor:'#10b981',backgroundColor:'rgba(16,185,129,.10)',tension:.32,fill:true,pointRadius:2}
-    ]},
-    options:{responsive:true,plugins:{legend:{labels:{color:'#8b9bb4',font:{size:11}}}},scales:{x:{ticks:{color:'#8b9bb4',maxRotation:60},grid:{color:'rgba(35,47,69,.45)'}},y:{ticks:{color:'#8b9bb4',callback:v=>'$'+(v/1000000).toFixed(1)+'M'},grid:{color:'rgba(35,47,69,.45)'}}}}
+  const ov = $('#overviewTools'); ov.innerHTML='';
+  (d.overview.tools||[]).forEach(t=>{
+    const s=document.createElement('span');
+    s.className='text-xs font-semibold px-3 py-1.5 rounded-full border border-[#232f45] bg-[#0a0e14]';
+    s.textContent=t; ov.appendChild(s);
+  });
+  const stack = $('#techStack'); stack.innerHTML='';
+  (d.techStack||[]).forEach(t=>{
+    const s=document.createElement('span');
+    s.className='text-xs font-semibold px-3 py-1.5 rounded-full border border-[#232f45] bg-white/5';
+    s.textContent=t; stack.appendChild(s);
   });
 }
-renderRev(12);
-document.getElementById('rangeFilter').addEventListener('change',e=>renderRev(parseInt(e.target.value)));
-
-catChart=new Chart(document.getElementById('catChart'),{
-  type:'doughnut',
-  data:{labels:REAL_DATA.categories.labels,datasets:[{data:REAL_DATA.categories.data,backgroundColor:['#3b82f6','#06b6d4','#8b5cf6','#f59e0b','#10b981','#ef4444','#94a3b8'],borderWidth:0}]},
-  options:{responsive:true,plugins:{legend:{position:'bottom',labels:{color:'#8b9bb4',font:{size:10},padding:10}},tooltip:{callbacks:{label:ctx=>ctx.label+': $'+(ctx.parsed/1000000).toFixed(2)+'M ('+(ctx.parsed/50223034.95*100).toFixed(1)+'%)'}}},cutout:'58%'}
+function renderBusinessQuestions(){
+  const ul=$('#businessQuestions'); ul.innerHTML='';
+  (window.PORTFOLIO_DATA.businessProblem.questions||[]).forEach(q=>{
+    const li=document.createElement('li'); li.textContent=q; ul.appendChild(li);
+  });
+}
+function renderDataColumns(){
+  const wrap=$('#dataColumns'); wrap.innerHTML='';
+  (window.PORTFOLIO_DATA.dataUnderstanding.columns||[]).forEach(c=>{
+    const div=document.createElement('div');
+    div.className='flex items-center justify-between gap-3 px-3 py-2 rounded-xl border border-[#232f45] bg-[#0a0e14]';
+    div.innerHTML=`<div><div class="font-mono text-xs font-bold">${c.name}</div><div class="text-xs text-[#8b9bb4]">${c.desc}</div></div><span class="text-[10px] tracking-widest uppercase font-bold px-2 py-1 rounded-full bg-white/5 border border-[#232f45] text-[#8b9bb4]">${c.type}</span>`;
+    wrap.appendChild(div);
+  });
+  const head=$('#previewHead'); head.innerHTML='';
+  (window.PORTFOLIO_DATA.dataUnderstanding.columns||[]).slice(0,4).forEach(c=>{
+    const th=document.createElement('th'); th.className='text-left px-3 py-2 font-mono'; th.textContent=c.name; head.appendChild(th);
+  });
+  const body=$('#previewBody'); body.innerHTML='';
+  (window.PORTFOLIO_DATA.dataUnderstanding.previewRows||[]).forEach(row=>{
+    const tr=document.createElement('tr'); row.slice(0,4).forEach(v=>{
+      const td=document.createElement('td'); td.className='px-3 py-2 font-mono text-[#8b9bb4]'; td.textContent=v; tr.appendChild(td);
+    }); body.appendChild(tr);
+  });
+}
+function renderCleaning(){
+  const grid=$('#cleaningGrid'); grid.innerHTML='';
+  (window.PORTFOLIO_DATA.cleaningSteps||[]).forEach(s=>{
+    const div=document.createElement('div');
+    div.className='bg-[#151d2b] border border-[#232f45] rounded-2xl p-4 hover:border-[#3b82f6]/30 transition';
+    div.innerHTML=`<div class="w-9 h-9 rounded-xl bg-white/5 border border-[#232f45] grid place-items-center text-sm">${s.icon}</div>
+      <h4 class="mt-3 text-sm font-bold">${s.title}</h4>
+      <p class="mt-1 text-xs text-[#8b9bb4]">${s.desc}</p>
+      <div class="mt-3 text-[10px] tracking-widest uppercase font-bold text-[#8b9bb4] border border-dashed border-[#232f45] rounded-lg px-2 py-1 bg-[#0a0e14]">Replace with real step outcome</div>`;
+    grid.appendChild(div);
+  });
+}
+function renderEda(){
+  const kpis=$('#edaKpis'); kpis.innerHTML='';
+  (window.PORTFOLIO_DATA.eda.kpis||[]).forEach(k=>{
+    const div=document.createElement('div');
+    div.className='bg-[#151d2b] border border-[#232f45] rounded-2xl p-4';
+    div.innerHTML=`<div class="text-[10px] tracking-widest uppercase font-bold text-[#8b9bb4]">${k.label}</div>
+      <div class="mt-1 text-xl font-extrabold">${k.value}</div>
+      <div class="text-xs text-emerald-400 font-semibold">${k.change}</div>`;
+    kpis.appendChild(div);
+  });
+  const charts=$('#edaCharts'); charts.innerHTML='';
+  (window.PORTFOLIO_DATA.eda.charts||[]).forEach(c=>{
+    const div=document.createElement('div');
+    div.className='bg-[#151d2b] border border-[#232f45] rounded-2xl p-4';
+    div.innerHTML=`<div class="flex items-center justify-between">
+        <h4 class="text-sm font-bold">${c.title}</h4>
+        <span class="text-[10px] tracking-widest uppercase font-bold px-2 py-1 rounded-full border border-[#232f45] bg-white/5 text-[#8b9bb4]">${c.id}</span>
+      </div>
+      <div class="mt-3 aspect-[16/9] rounded-xl border border-dashed border-[#232f45] bg-[#0a0e14] grid place-items-center text-center p-4">
+        <div><div class="text-lg">📈</div><div class="text-xs font-mono text-[#8b9bb4] mt-1">[INSERT CHART — ${c.title}]</div><div class="text-[11px] text-[#8b9bb4] mt-1">${c.desc}</div></div>
+      </div>
+      <div class="mt-3 text-xs"><span class="font-bold">Key finding:</span> <span class="text-[#8b9bb4]">${c.finding}</span></div>`;
+    charts.appendChild(div);
+  });
+}
+function renderInsights(){
+  const grid=$('#insightsGrid'); grid.innerHTML='';
+  (window.PORTFOLIO_DATA.insights||[]).forEach(ins=>{
+    const div=document.createElement('div');
+    div.className='bg-[#151d2b] border border-[#232f45] rounded-2xl p-5 border-l-[3px] border-l-[#3b82f6]';
+    div.innerHTML=`<div class="flex items-start justify-between gap-3">
+        <h4 class="text-sm font-bold">${ins.title}</h4>
+        <span class="shrink-0 text-xs font-mono font-bold px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300">${ins.kpi}</span>
+      </div>
+      <p class="mt-2 text-sm text-[#8b9bb4]">${ins.desc}</p>`;
+    grid.appendChild(div);
+  });
+}
+function renderRecs(){
+  const grid=$('#recGrid'); grid.innerHTML='';
+  (window.PORTFOLIO_DATA.recommendations||[]).forEach(r=>{
+    const div=document.createElement('div');
+    div.className='bg-[#151d2b] border border-[#232f45] rounded-2xl p-5 grid lg:grid-cols-[1.2fr_.9fr_.7fr] gap-4';
+    div.innerHTML=`<div><div class="text-[10px] tracking-widest uppercase font-bold text-[#3b82f6]">Recommendation</div><div class="mt-1 text-sm font-bold">${r.rec}</div></div>
+      <div><div class="text-[10px] tracking-widest uppercase font-bold text-[#8b9bb4]">Reason</div><div class="mt-1 text-sm text-[#8b9bb4]">${r.reason}</div></div>
+      <div><div class="text-[10px] tracking-widest uppercase font-bold text-emerald-400">Expected Impact</div><div class="mt-1 text-sm text-[#8b9bb4]">${r.impact}</div></div>`;
+    grid.appendChild(div);
+  });
+}
+function renderGallery(){
+  const grid=$('#galleryGrid'); grid.innerHTML='';
+  (window.PORTFOLIO_DATA.gallery||[]).forEach(g=>{
+    const div=document.createElement('div');
+    div.className='bg-[#151d2b] border border-[#232f45] rounded-2xl p-3';
+    div.innerHTML=`<div class="aspect-[16/10] rounded-xl border border-dashed border-[#232f45] bg-[#0a0e14] grid place-items-center text-center p-6">
+        <div><div class="text-xl">🖼️</div><div class="mt-2 text-sm font-bold">${g.title}</div><div class="text-xs text-[#8b9bb4] mt-1">${g.desc}</div><div class="mt-3 text-[10px] tracking-widest uppercase font-bold px-2 py-1 rounded-full bg-white/5 border border-[#232f45] text-[#8b9bb4]">[INSERT IMAGE]</div></div>
+      </div>`;
+    grid.appendChild(div);
+  });
+}
+function renderResults(){
+  const wrap=$('#resultsKpis'); wrap.innerHTML='';
+  (window.PORTFOLIO_DATA.results.kpis||[]).forEach(k=>{
+    const div=document.createElement('div');
+    div.className='bg-[#0a0e14] border border-[#232f45] rounded-xl p-3 text-center';
+    div.innerHTML=`<div class="text-sm font-mono font-bold">${k}</div><div class="text-[10px] tracking-widest uppercase font-bold text-[#8b9bb4] mt-1">KPI</div>`;
+    wrap.appendChild(div);
+  });
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  bindPlaceholders();
+  renderTools();
+  renderBusinessQuestions();
+  renderDataColumns();
+  renderCleaning();
+  renderEda();
+  renderInsights();
+  renderRecs();
+  renderGallery();
+  renderResults();
+  document.getElementById('mobileMenuBtn').addEventListener('click',()=>{
+    document.getElementById('mobileMenu').classList.toggle('hidden');
+  });
 });
-new Chart(document.getElementById('mktChart'),{
-  type:'bar',
-  data:{labels:REAL_DATA.marketing_2024_12.labels,datasets:[
-    {label:'Spend',data:REAL_DATA.marketing_2024_12.spend,backgroundColor:'rgba(239,68,68,.82)',borderRadius:6},
-    {label:'Reported Revenue',data:REAL_DATA.marketing_2024_12.reported,backgroundColor:'rgba(59,130,246,.82)',borderRadius:6},
-    {label:'Actual Sales Revenue',data:REAL_DATA.marketing_2024_12.actual,backgroundColor:'rgba(16,185,129,.82)',borderRadius:6}
-  ]},
-  options:{responsive:true,plugins:{legend:{labels:{color:'#8b9bb4',font:{size:10}}}},scales:{x:{ticks:{color:'#8b9bb4'},grid:{display:false}},y:{ticks:{color:'#8b9bb4',callback:v=>'$'+(v/1000)+'k'},grid:{color:'rgba(35,47,69,.45)'}}}}
-});
-new Chart(document.getElementById('invChart'),{
-  type:'bar',
-  data:{labels:['Healthy','Below Reorder','Stockout'],datasets:[{label:'SKUs',data:[REAL_DATA.inventory.healthy,REAL_DATA.inventory.below,REAL_DATA.inventory.stockout],backgroundColor:['#10b981','#f59e0b','#ef4444'],borderRadius:6}]},
-  options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#8b9bb4'},grid:{color:'rgba(35,47,69,.45)'}},y:{ticks:{color:'#8b9bb4'},grid:{display:false}}}}
-});
-new Chart(document.getElementById('custChart'),{
-  type:'doughnut',
-  data:{labels:REAL_DATA.customer.labels,datasets:[{data:REAL_DATA.customer.data,backgroundColor:['#10b981','#f59e0b','#ef4444','#475569'],borderWidth:0}]},
-  options:{responsive:true,plugins:{legend:{position:'bottom',labels:{color:'#8b9bb4',font:{size:11}}}},cutout:'54%'}
-});
+// smooth active nav highlight
+const sections=[...document.querySelectorAll('section[id]')];
+const navLinks=[...document.querySelectorAll('nav a[href^=\"#\"]')];
+window.addEventListener('scroll',()=>{
+  const y=window.scrollY+90;
+  let cur='';
+  sections.forEach(s=>{ if(s.offsetTop <= y) cur=s.id; });
+  navLinks.forEach(a=>{ a.classList.toggle('text-white', a.getAttribute('href')==='#'+cur); });
+},{passive:true});
 </script>
 </body>
 </html>
