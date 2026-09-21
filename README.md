@@ -1,7 +1,6 @@
 # 🚀 E-Commerce Data Pipeline (Bronze ➔ Silver ➔ Gold)
 
 🔗 **Live Interactive Dashboard:** [View Live Project](https://hamed7848.github.io/E-commerce-supply-chain/)
-# E-Commerce Data Pipeline (Bronze → Silver → Gold)
 
 A SQL-based medallion-architecture data pipeline built on a synthetic
 e-commerce dataset (customers, products, inventory, suppliers, marketing,
