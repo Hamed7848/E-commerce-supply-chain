@@ -3,457 +3,737 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- Rebuilt English-only 2026-05-13 --><title>E-Commerce Supply Chain GÇö Medallion Data Pipeline | Portfolio Case Study GÇö Real Data</title>
-<meta name="description" content="Portfolio case study GÇö 100% real data from 8 raw CSVs via BronzeGåÆSilverGåÆGold pipeline. 100k transactions, $50.2M revenue, 6 Gold tables. No mock data.">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>E-Commerce Supply Chain &mdash; Data Analysis Dashboard</title>
+<meta name="description" content="Dark-mode analytics dashboard for the E-Commerce medallion pipeline (Bronze -> Silver -> Gold). Every figure is computed from the 8 raw CSVs with the same rules as sql/gold/gg_gold_load.sql. No dummy data.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23111826'/%3E%3Cpath d='M9 21h14M9 15h5l4-4h4' stroke='%234cc2ff' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
-:root{--bg:#0a0e14;--bg-soft:#10161f;--card:#151d2b;--border:#232f45;--text:#e6edf3;--muted:#8b9bb4;--accent:#3b82f6;--accent2:#06b6d4;--orange:#f59e0b;--green:#10b981;--red:#ef4444;--violet:#8b5cf6}
-*{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}
-body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden}
-a{color:inherit;text-decoration:none}.mono{font-family:'JetBrains Mono',monospace}
-.container{max-width:1180px;margin:0 auto;padding:0 24px}
-nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(16px);background:rgba(10,14,20,.78);border-bottom:1px solid var(--border)}
-.nav-inner{height:64px;display:flex;align-items:center;justify-content:space-between}
-.logo{display:flex;align-items:center;gap:12px;font-weight:800;letter-spacing:.02em}
-.logo-mark{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;font-size:14px}
-.nav-links{display:flex;gap:16px;font-size:12.5px;color:var(--muted);font-weight:500;flex-wrap:wrap}
-.nav-links a:hover{color:var(--text)}
-.btn{padding:10px 18px;border-radius:10px;font-weight:600;font-size:13px;display:inline-flex;align-items:center;gap:8px;transition:.2s;border:1px solid transparent;cursor:pointer}
-.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;box-shadow:0 8px 24px rgba(59,130,246,.35)}
-.btn-ghost{border-color:var(--border);background:rgba(255,255,255,.04);color:var(--text)}
-.badge{font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--muted);font-weight:600}
-.badge-dot{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;box-shadow:0 0 8px var(--green)}
-.hero{padding:28px 0 16px}.hero-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:32px;align-items:start}
-@media(max-width:900px){.hero-grid{grid-template-columns:1fr}}
-.hero h1{font-size:42px;line-height:1.05;letter-spacing:-.03em;font-weight:800}
-@media(max-width:600px){.hero h1{font-size:30px}}
-.hero h1 span{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.hero p{color:var(--muted);font-size:14.5px;margin:14px 0 18px;max-width:620px}
-.hero-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-.provenance{background:linear-gradient(135deg,rgba(16,185,129,.14),rgba(59,130,246,.10));border:1px solid rgba(16,185,129,.35);border-radius:14px;padding:12px 14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:14px 0}
-.provenance b{color:var(--green)} .provenance code{background:rgba(255,255,255,.06);padding:2px 6px;border-radius:6px;border:1px solid var(--border)}
-.hero-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
-.stat-mini{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px}
-.stat-mini b{font-size:18px;display:block}.stat-mini span{font-size:11px;color:var(--muted)}
-.hero-card{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.01));border:1px solid var(--border);border-radius:20px;padding:18px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
-.pipeline-visual{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:14px 0}
-.pipe-node{flex:1;text-align:center;padding:12px 6px;border-radius:14px;border:1px solid var(--border);background:var(--card);font-size:11px}
-.pipe-node.bronze{border-color:rgba(245,158,11,.5);background:linear-gradient(180deg,rgba(245,158,11,.12),rgba(245,158,11,.02))}
-.pipe-node.silver{border-color:rgba(139,155,180,.5);background:linear-gradient(180deg,rgba(139,155,180,.10),rgba(139,155,180,.02))}
-.pipe-node.gold{border-color:rgba(251,191,36,.5);background:linear-gradient(180deg,rgba(251,191,36,.14),rgba(245,158,11,.03))}
-.pipe-arrow{color:var(--muted);font-size:16px}
-.code-block{background:#0d1117;border:1px solid var(--border);border-radius:12px;padding:12px;font-size:11px;color:#8b9bb4;overflow:auto;line-height:1.6}
-.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:22px 0}
-@media(max-width:900px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
-.kpi{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;position:relative;overflow:hidden}
-.kpi::after{content:"";position:absolute;inset:0 0 auto 0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2));opacity:.85}
-.kpi label{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
-.kpi strong{font-size:20px;display:block;margin:5px 0 2px}
-.kpi small{font-size:11.5px;color:var(--muted)}
-.kpi .trend{font-size:11px;font-weight:600;margin-top:4px}
-.trend.up{color:var(--green)} .trend.down{color:var(--red)}
-section{padding:28px 0}
-.section-head{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:16px;flex-wrap:wrap}
-.section-head h2{font-size:24px;letter-spacing:-.02em}.section-head p{color:var(--muted);font-size:13px;max-width:560px}
-.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px}
-.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-.grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
-@media(max-width:900px){.grid-3,.grid-2{grid-template-columns:1fr}}
-.layer{border:1px solid var(--border);border-radius:16px;padding:16px;background:var(--card)}
-.layer h3{font-size:14px;margin-bottom:6px}.layer p{font-size:12.5px;color:var(--muted)}
-.layer ul{margin-top:8px;padding-left:16px;font-size:12px;color:var(--muted)}
-.tag{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:4px 8px;border-radius:999px;border:1px solid var(--border)}
-.tag.bronze{color:#f59e0b;border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.12)}
-.tag.silver{color:#cbd5e1;border-color:rgba(203,213,225,.3);background:rgba(203,213,225,.08)}
-.tag.gold{color:#fbbf24;border-color:rgba(251,191,36,.4);background:rgba(251,191,36,.12)}
-.dataset{padding:14px;display:flex;flex-direction:column;gap:8px}
-.dataset-head{display:flex;align-items:center;gap:10px}
-.dataset-icon{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:15px;background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.25)}
-.dataset h4{font-size:12.5px}
-.dataset p{font-size:11.5px;color:var(--muted)}
-.cols{font-size:10.5px;color:var(--muted);display:flex;flex-wrap:wrap;gap:5px}
-.cols span{background:rgba(255,255,255,.05);border:1px solid var(--border);padding:3px 7px;border-radius:999px}
-.count-badge{background:var(--green);color:white;font-size:10px;padding:2px 7px;border-radius:999px;font-weight:700}
-.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-.tab{padding:7px 11px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.03);font-size:11.5px;font-weight:600;color:var(--muted);cursor:pointer}
-.tab.active{background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;border-color:transparent;box-shadow:0 6px 16px rgba(59,130,246,.35)}
-.table-wrap{overflow:auto;border:1px solid var(--border);border-radius:12px}
-table{width:100%;border-collapse:collapse;font-size:12px;min-width:680px}
-th{text-align:left;padding:9px 10px;background:rgba(255,255,255,.03);color:var(--muted);font-size:10px;letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--border)}
-td{padding:9px 10px;border-bottom:1px solid rgba(35,47,69,.5)} tr:hover td{background:rgba(255,255,255,.02)}
-.badge-status{padding:3px 7px;border-radius:999px;font-size:10.5px;font-weight:700;border:1px solid}
-.badge-status.active{color:var(--green);border-color:rgba(16,185,129,.3);background:rgba(16,185,129,.12)}
-.badge-status.risk{color:var(--orange);border-color:rgba(245,158,11,.3);background:rgba(245,158,11,.12)}
-.badge-status.churn{color:var(--red);border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.12)}
-.chart-grid{display:grid;grid-template-columns:1.6fr .9fr;gap:12px}
-@media(max-width:900px){.chart-grid{grid-template-columns:1fr}}
-.chart-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px}
-.chart-card h4{font-size:12.5px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
-.chart-card h4 span{font-size:10.5px;color:var(--muted);font-weight:500}
-.insight{border-left:3px solid var(--accent);padding-left:12px}
-.insight h4{font-size:12.5px;margin-bottom:3px}.insight p{font-size:11.5px;color:var(--muted)}
-.stack{display:flex;flex-wrap:wrap;gap:8px}
-.stack-item{padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:var(--card);font-size:11.5px;font-weight:600;display:flex;align-items:center;gap:6px}
-footer{border-top:1px solid var(--border);padding:22px 0;color:var(--muted);font-size:11.5px;margin-top:10px}
-.search{padding:9px 11px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.03);color:var(--text);font-size:12px;outline:none;width:100%}
-.search:focus{border-color:var(--accent)}
-hr.sep{border:none;border-top:1px solid var(--border);margin:10px 0}
+  /* ============================ tokens ============================ */
+  :root{
+    --bg:#0a0d14;
+    --surface:#111826;
+    --surface-2:#0d141f;
+    --surface-3:#0a0f18;
+    --border:#1e2a3e;
+    --border-soft:#16202f;
+    --text-hi:#eef3fa;
+    --text:#d4deeb;
+    --muted:#9daec4;
+    --faint:#7e8ea6;
+    --accent:#4cc2ff;
+    --accent-2:#8b9cf6;
+    --violet:#a78bfa;
+    --teal:#2dd4bf;
+    --green:#3fd8a0;
+    --amber:#fdc35a;
+    --rose:#fb7185;
+    --bronze:#dd9a5f;
+    --shadow:0 10px 30px rgba(0,0,0,.35);
+    --r:16px;
+    --font:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme: light){
+    /* keep the dashboard dark by design; no-op guard */
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none!important;transition:none!important}
+    html{scroll-behavior:auto}
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth;scroll-padding-top:88px}
+  body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  ::selection{background:rgba(76,194,255,.28);color:var(--text-hi)}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+  .mono{font-family:var(--mono)}
+  .wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+  @media(max-width:640px){.wrap{padding:0 16px}}
+  a{color:inherit;text-decoration:none}
+
+  /* ============================ nav ============================ */
+  nav{position:sticky;top:0;z-index:60;background:rgba(10,13,20,.82);backdrop-filter:blur(14px);border-bottom:1px solid var(--border-soft)}
+  .nav{display:flex;align-items:center;justify-content:space-between;height:64px;gap:20px}
+  .brand{display:flex;align-items:center;gap:12px;font-weight:800;font-size:15px;letter-spacing:.005em;color:var(--text-hi);white-space:nowrap}
+  .brand .mark{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#4cc2ff,#8b9cf6);display:grid;place-items:center;box-shadow:0 4px 14px rgba(76,194,255,.35)}
+  .brand .mark svg{width:18px;height:18px}
+  .brand .sub{color:var(--faint);font-weight:500;font-size:13px}
+  .links{display:flex;gap:4px;font-size:13px}
+  .links a{padding:7px 12px;border-radius:9px;color:var(--muted);font-weight:500;transition:color .15s,background .15s}
+  .links a:hover{color:var(--text-hi);background:rgba(255,255,255,.04)}
+  .links a.active{color:var(--text-hi);background:rgba(76,194,255,.12);box-shadow:inset 0 0 0 1px rgba(76,194,255,.25)}
+  @media(max-width:820px){.links{display:none}}
+  .progress{position:absolute;left:0;bottom:-1px;height:2px;width:0;background:linear-gradient(90deg,var(--accent),var(--accent-2));transition:width .1s linear}
+
+  /* ============================ hero ============================ */
+  header{padding:40px 0 24px;position:relative}
+  header::before{content:"";position:absolute;inset:0;background:radial-gradient(720px 340px at 18% -30px,rgba(76,194,255,.10),transparent 70%),radial-gradient(640px 300px at 85% -50px,rgba(139,156,246,.09),transparent 70%);pointer-events:none}
+  .badges{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+  .badge{font-size:11px;font-weight:600;padding:5px 11px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--muted);letter-spacing:.02em}
+  .badge.true{color:var(--green);border-color:rgba(63,216,160,.4);background:rgba(63,216,160,.09)}
+  .badge.gold{color:var(--amber);border-color:rgba(253,195,90,.4);background:rgba(253,195,90,.08)}
+  .badge.silver{color:#c6d3e5;border-color:rgba(198,211,229,.32);background:rgba(198,211,229,.06)}
+  .badge.bronze{color:var(--bronze);border-color:rgba(221,154,95,.4);background:rgba(221,154,95,.08)}
+  .eyebrow{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin-bottom:10px}
+  h1{font-size:clamp(28px,4.2vw,44px);line-height:1.08;font-weight:800;letter-spacing:-.03em;color:var(--text-hi);max-width:860px}
+  h1 .grad{background:linear-gradient(92deg,var(--accent) 10%,var(--accent-2) 70%,var(--violet) 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .sub{color:var(--muted);font-size:14.5px;max-width:760px;margin-top:12px}
+  .sub b{color:var(--text-hi);font-weight:600}
+  .inline{font-family:var(--mono);font-size:.86em;background:var(--surface-3);border:1px solid var(--border-soft);padding:2px 7px;border-radius:6px;color:#bcd2ea}
+  .provenance{margin-top:20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 16px;font-size:12px;color:var(--muted)}
+  .provenance .ck{flex:0 0 26px;width:26px;height:26px;border-radius:999px;background:rgba(63,216,160,.14);border:1px solid rgba(63,216,160,.45);display:grid;place-items:center;color:var(--green)}
+  .provenance code{font-family:var(--mono);color:var(--text-hi);background:var(--surface-3);border:1px solid var(--border-soft);padding:1px 6px;border-radius:5px}
+  .provenance b{color:var(--green);font-weight:700}
+
+  /* ============================ pipeline ============================ */
+  .pipeline{display:grid;grid-template-columns:1fr 46px 1fr 46px 1fr;gap:0;margin:34px 0 6px}
+  @media(max-width:920px){.pipeline{grid-template-columns:1fr;gap:10px}.pipeline .arrow{transform:rotate(90deg);padding:2px 0}}
+  .pipe{background:linear-gradient(180deg,rgba(255,255,255,.02),transparent),var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px 18px 16px;position:relative;transition:transform .18s,box-shadow .18s,border-color .18s}
+  .pipe:hover{transform:translateY(-3px);border-color:rgba(76,194,255,.35);box-shadow:var(--shadow)}
+  .pipe .bar{position:absolute;inset:0 0 auto 0;height:3px;border-radius:var(--r) var(--r) 0 0}
+  .pipe.bronze .bar{background:var(--bronze)}
+  .pipe.silver .bar{background:linear-gradient(90deg,#9fb0c8,#6b7f9c)}
+  .pipe.gold .bar{background:var(--amber)}
+  .pipe .step{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+  .pipe .step i{font-style:normal;color:var(--accent)}
+  .piperow{display:flex;align-items:center;gap:10px;margin:4px 0 10px}
+  .pipe .pnum{flex:0 0 26px;width:26px;height:26px;border-radius:8px;display:grid;place-items:center;font-size:13px;font-weight:800;color:#0a0d14}
+  .pipe.bronze .pnum{background:var(--bronze)}
+  .pipe.silver .pnum{background:linear-gradient(135deg,#c6d3e5,#93a4bc);color:#17202e}
+  .pipe.gold .pnum{background:var(--amber);color:#2a2005}
+  .pipe h4{font-size:14px;font-weight:800;color:var(--text-hi)}
+  .pipe .db{font-family:var(--mono);font-size:11.5px;color:var(--accent);margin-bottom:8px}
+  .pipe ul{list-style:none;font-size:12px;color:var(--muted);border-top:1px solid var(--border-soft);padding-top:8px}
+  .pipe li{margin:3px 0;display:flex;gap:7px}
+  .pipe li::before{content:"Â·";color:var(--accent);font-weight:800}
+  .pipe li b{color:var(--text-hi);font-weight:600}
+  .arrow{display:grid;place-items:center;color:var(--faint);font-size:20px}
+
+  /* ============================ sections ============================ */
+  section{padding:38px 0;border-bottom:1px solid var(--border-soft)}
+  .sec-head{margin-bottom:20px;display:flex;flex-direction:column;gap:6px}
+  .sec-kicker{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-2)}
+  .sec-head h2{font-size:21px;font-weight:800;letter-spacing:-.015em;color:var(--text-hi)}
+  .sec-head p{color:var(--muted);font-size:13px;max-width:780px}
+  .sec-head p b{color:var(--text-hi)}
+
+  /* ============================ KPIs ============================ */
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(224px,1fr));gap:14px}
+  .kpi{background:linear-gradient(180deg,rgba(255,255,255,.022),transparent),var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px 18px 16px;position:relative;overflow:hidden;transition:transform .18s,border-color .18s,box-shadow .18s}
+  .kpi:hover{transform:translateY(-3px);border-color:rgba(76,194,255,.32);box-shadow:var(--shadow)}
+  .kpi::before{content:"";position:absolute;inset:0 0 auto 0;height:2px;background:var(--kpi-tone,linear-gradient(90deg,var(--accent),var(--accent-2)));opacity:.85}
+  .kpi .top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+  .kpi .lbl{font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--muted);font-weight:700;line-height:1.35}
+  .kpi .ico{flex:0 0 34px;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:rgba(255,255,255,.04);border:1px solid var(--border-soft);color:var(--kpi-icon,var(--accent))}
+  .kpi .ico svg{width:17px;height:17px}
+  .kpi .val{font-size:26px;font-weight:800;letter-spacing:-.02em;color:var(--text-hi);font-variant-numeric:tabular-nums;line-height:1.1}
+  .kpi .det{font-size:11.5px;color:var(--muted);margin-top:7px;line-height:1.55}
+  .kpi .det b{color:var(--text-hi);font-weight:600}
+  .kpi .up{color:var(--green)} .kpi .down{color:var(--rose)} .kpi .warn{color:var(--amber)}
+
+  /* ============================ charts ============================ */
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:16px}
+  @media(max-width:640px){.grid{grid-template-columns:1fr}}
+  .chart{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;display:flex;flex-direction:column}
+  .chart-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+  .chart-head h4{font-size:13.5px;font-weight:700;color:var(--text-hi);letter-spacing:-.01em}
+  .chart-head h4 code{font-family:var(--mono);font-size:10.5px;color:var(--accent);display:block;margin-top:2px;font-weight:500}
+  .chart-head span{font-size:10.5px;color:var(--faint);font-weight:600;text-align:right;letter-spacing:.02em}
+  .chart-body{position:relative;height:250px;flex:1}
+  .toolbar{display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+  .toolbar label{font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.02em}
+  select.search{min-width:0;width:auto;padding:8px 34px 8px 12px;appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239daec4' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+
+  /* ============================ rules ============================ */
+  .rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px}
+  .rule{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:8px}
+  .rule .hrow{display:flex;gap:12px;align-items:flex-start}
+  .rule .num{flex:0 0 28px;width:28px;height:28px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#0a0d14;font-weight:800;font-size:14px;display:grid;place-items:center;font-family:var(--mono)}
+  .rule h3{font-size:13.5px;font-weight:700;color:var(--text-hi);letter-spacing:-.01em;padding-top:3px}
+  .rule p{font-size:12.5px;color:var(--muted)}
+  .rule p b{color:var(--text-hi);font-weight:600}
+  .rule .sql{font-family:var(--mono);font-size:11.5px;line-height:1.7;background:var(--surface-3);border:1px solid var(--border-soft);border-radius:10px;padding:10px 12px;color:#bcd2ea;overflow-x:auto;white-space:pre;margin-top:2px}
+  .rule .src{margin-top:auto;font-size:10.5px;color:var(--faint);letter-spacing:.02em;padding-top:4px}
+  .rule .src code{font-family:var(--mono);color:var(--muted)}
+
+  /* ============================ tables ============================ */
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  .tab{padding:8px 15px;border-radius:10px;border:1px solid var(--border);background:var(--surface);font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s;font-family:var(--font)}
+  .tab:hover{color:var(--text-hi);border-color:rgba(76,194,255,.35)}
+  .tab.active{background:linear-gradient(135deg,rgba(76,194,255,.18),rgba(139,156,246,.14));color:var(--text-hi);border-color:rgba(76,194,255,.45);box-shadow:0 4px 16px rgba(76,194,255,.16);font-weight:700}
+  .tb-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+  .tb-title{font-size:13.5px;font-weight:700;color:var(--text-hi)}
+  .tb-title code{font-family:var(--mono);font-size:11px;color:var(--accent);font-weight:500}
+  .tb-note{font-size:11px;color:var(--faint);margin-left:8px}
+  .tblwrap{overflow:auto;border:1px solid var(--border);border-radius:var(--r);background:var(--surface);box-shadow:0 4px 18px rgba(0,0,0,.18)}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:680px}
+  thead th{position:sticky;top:0;background:#101828;text-align:left;padding:11px 14px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);font-weight:700;white-space:nowrap}
+  tbody td{padding:10px 14px;border-bottom:1px solid var(--border-soft);vertical-align:top}
+  tbody tr:nth-child(even){background:rgba(255,255,255,.014)}
+  tbody tr:hover td{background:rgba(76,194,255,.045)}
+  tbody tr:last-child td{border-bottom:none}
+  td.mut{font-size:10.5px;color:var(--faint)}
+  .pill{font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:999px;border:1px solid;white-space:nowrap;letter-spacing:.02em}
+  .pill.act{color:var(--green);border-color:rgba(63,216,160,.38);background:rgba(63,216,160,.09)}
+  .pill.risk{color:var(--amber);border-color:rgba(253,195,90,.38);background:rgba(253,195,90,.09)}
+  .pill.bad{color:var(--rose);border-color:rgba(251,113,133,.38);background:rgba(251,113,133,.09)}
+  .pill.ok{color:var(--accent);border-color:rgba(76,194,255,.38);background:rgba(76,194,255,.09)}
+  .search{padding:9px 14px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);color:var(--text-hi);font-size:12.5px;outline:none;min-width:210px;transition:border-color .15s,box-shadow .15s}
+  .search:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(76,194,255,.16)}
+  .search::placeholder{color:var(--faint)}
+  .tbl-foot{padding:10px 14px;font-size:11px;color:var(--faint);border-top:1px solid var(--border-soft)}
+  .num{font-variant-numeric:tabular-nums}
+
+  /* ============================ dictionary ============================ */
+  .dict{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px}
+  .dict-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;transition:border-color .15s,transform .15s}
+  .dict-item:hover{border-color:rgba(76,194,255,.3);transform:translateY(-2px)}
+  .dict-item .dhead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:4px}
+  .dict-item h4{font-size:13px;font-weight:700;color:var(--text-hi);font-family:var(--mono)}
+  .dict-item .rows{font-size:10.5px;font-weight:700;color:var(--accent);background:rgba(76,194,255,.1);border:1px solid rgba(76,194,255,.28);padding:2px 9px;border-radius:999px}
+  .dict-item .meta{font-size:11.5px;color:var(--muted);margin-bottom:10px}
+  .dict-item ul{list-style:none;display:flex;flex-wrap:wrap;gap:5px}
+  .dict-item li{font-size:10.5px;background:var(--surface-2);border:1px solid var(--border-soft);border-radius:999px;padding:3px 9px;color:var(--muted);font-family:var(--mono)}
+
+  /* ============================ insights ============================ */
+  .ins{background:linear-gradient(135deg,rgba(76,194,255,.08),rgba(139,156,246,.06) 60%,rgba(167,139,250,.05));border:1px solid rgba(76,194,255,.22);border-radius:var(--r);padding:20px 22px}
+  .ins h3{font-size:13.5px;color:var(--text-hi);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+  .ins h3::before{content:"";width:8px;height:8px;border-radius:2px;background:linear-gradient(135deg,var(--accent),var(--accent-2))}
+  .ins ul{padding-left:0;list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+  .ins li{font-size:12.5px;color:var(--muted);padding-left:14px;position:relative;line-height:1.6}
+  .ins li::before{content:"";position:absolute;left:0;top:9px;width:6px;height:6px;border-radius:999px;background:var(--accent);opacity:.8}
+  .ins li b{color:var(--text-hi);font-weight:600}
+
+  /* ============================ footer ============================ */
+  footer{padding:26px 0 38px;color:var(--faint);font-size:12px}
+  footer .wrap{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;align-items:center}
+  footer .fnote b{color:var(--green);font-weight:600}
+  footer .mono{color:#7e8ea6;font-size:11.5px}
 </style>
 </head>
 <body>
+
 <nav>
-  <div class="container nav-inner">
-    <div class="logo"><div class="logo-mark">Gùê</div> <span>ECOM<span style="color:var(--muted);font-weight:600"> GÇó Supply Chain</span></span> <span class="badge" style="margin-left:8px">Real Data GÇó No Mockups</span></div>
-    <div class="nav-links">
-      <a href="#provenance">Provenance</a>
-      <a href="#architecture">Architecture</a>
-      <a href="#data">8 Datasets</a>
-      <a href="#gold">Gold Layer</a>
-      <a href="#dashboard">Dashboard</a>
-      <a href="https://github.com/Hamed7848/E-commerce-supply-chain" target="_blank">GitHub Gåù</a>
+  <div class="wrap nav">
+    <a class="brand" href="#top" aria-label="Dashboard home">
+      <span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="#0a0d14" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V10M10 21V6M15 21V10M20 21V3"/></svg></span>
+      <span>E-Commerce <span class="sub">Supply Chain Analytics</span></span>
+    </a>
+    <div class="links" id="navLinks">
+      <a href="#kpis">KPIs</a>
+      <a href="#trends">Trends</a>
+      <a href="#rules">Analysis Rules</a>
+      <a href="#gold">Gold Tables</a>
+      <a href="#insights">Insights</a>
+      <a href="#dictionary">Dictionary</a>
     </div>
   </div>
+  <div class="progress" id="progress"></div>
 </nav>
 
-<header class="hero container">
-  <div class="hero-grid">
-    <div>
-      <div class="hero-meta">
-        <span class="badge"><span class="badge-dot"></span> &nbsp; 100% REAL CSV DATA</span>
-        <span class="badge mono">100,000 transactions GÇó 2022-01-01 GåÆ 2024-12-31</span>
-        <span class="badge mono">MySQL 8.0 GÇó Python GÇó Power BI</span>
-      </div>
-      <h1>E-Commerce <span>Data Pipeline</span><br>Bronze GåÆ Silver GåÆ Gold</h1>
-      <p>A SQL medallion pipeline on 8 synthetic datasets GÇö customers, products, inventory, suppliers, marketing, pricing, transactions & returns. <b style="color:var(--text)">Every number below is computed from the raw CSVs</b> (data raw/) using the same logic as <code class="mono">sql/gold/gg_gold_load.sql</code>: valid = completed+refunded, ref_date = MAX(date) = 2024-12-31.</p>
-      <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <a class="btn btn-primary" href="https://github.com/Hamed7848/E-commerce-supply-chain" target="_blank">View Repository Gåù</a>
-        <a class="btn btn-ghost" href="#dashboard">Explore Real Dashboard Gåô</a>
-        <a class="btn btn-ghost mono" href="#provenance">Validation Gåô</a>
-      </div>
-      <div id="provenance" class="provenance">
-        <div style="flex:1;min-width:260px">
-          <div class="mono" style="font-size:11px;color:var(--green);font-weight:700;letter-spacing:.06em">G£ö VALIDATED GÇö NO DUMMY DATA</div>
-          <div style="font-size:12px;margin-top:4px">Source: <code>data raw/*.csv</code> from <a href="https://github.com/Hamed7848/E-commerce-supply-chain/tree/main/data%20raw" target="_blank" style="text-decoration:underline;color:var(--accent)">Hamed7848/E-commerce-supply-chain</a> GÇó Fetched & aggregated live GÇó <span class="mono">rows: customers 8,000 GÇó products 500 GÇó inventory 500 GÇó supplier_costs 998 GÇó marketing 216 GÇó price_history 18,000 GÇó transactions 100,000 GÇó returns 7,126</span></div>
-          <div class="mono" style="font-size:11px;color:var(--muted);margin-top:4px">Ref date for churn & 90-day velocity: <b style="color:var(--text)">2024-12-31</b> GÇó Last computed in browser from real CSV aggregates (see real_kpis.json)</div>
-        </div>
-        <div class="mono" style="font-size:11px;background:rgba(255,255,255,.04);padding:8px 10px;border-radius:10px;border:1px solid var(--border)">Gold tables mirror SQL: customer_status (Active Gëñ90d, At Risk Gëñ180d, else Churned) GÇó days_of_supply = stock / avg_daily_90d</div>
-      </div>
-      <div class="hero-stats">
-        <div class="stat-mini"><span>Transactions (fact)</span><b>100,000</b><span class="mono">valid 94,951 GÇó cancelled 5,049</span></div>
-        <div class="stat-mini"><span>Customers GÇó Products</span><b>8,000 GÇó 500</b><span class="mono">7968 distinct buyers</span></div>
-        <div class="stat-mini"><span>Revenue (valid)</span><b>$50.22M</b><span class="mono">profit $17.01M GÇó 33.87% margin</span></div>
-      </div>
+<header id="top">
+  <div class="wrap">
+    <div class="badges">
+      <span class="badge true">100% real data &middot; verified</span>
+      <span class="badge gold">Gold: 6 BI-ready tables</span>
+      <span class="badge silver">Silver: typed &amp; deduped</span>
+      <span class="badge bronze">Bronze: as-is ingestion</span>
+      <span class="badge">ref_date = 2024-12-31</span>
     </div>
-    <div class="hero-card">
-      <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:13px">Medallion Flow GÇö Real Row Counts</b><span class="mono" style="font-size:10px;color:var(--muted)">bb_bronze GåÆ ss_silver GåÆ gg_gold</span></div>
-      <div class="pipeline-visual">
-        <div class="pipe-node bronze"><div style="font-size:16px">Gù¿</div><b>Bronze</b><div class="mono">bb_bronze<br>8 tables GÇó TEXT<br>100k txns as-is</div></div>
-        <div class="pipe-arrow">GåÆ</div>
-        <div class="pipe-node silver"><div style="font-size:16px">G¼ó</div><b>Silver</b><div class="mono">ss_silver<br>typed GÇó deduped<br>ROW_NUMBER()</div></div>
-        <div class="pipe-arrow">GåÆ</div>
-        <div class="pipe-node gold"><div style="font-size:16px">G¼ú</div><b>Gold</b><div class="mono">gg_gold<br>6 tables<br>denormalized</div></div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0">
-        <div class="card" style="padding:10px"><div class="mono" style="font-size:10px;color:var(--muted)">GOLD: customer_360</div><b style="font-size:12px">8,000 rows</b><span class="mono" style="font-size:10px;color:var(--muted)"> Active 4,663 GÇó Churned 1,987</span></div>
-        <div class="card" style="padding:10px"><div class="mono" style="font-size:10px;color:var(--muted)">GOLD: product_perf</div><b style="font-size:12px">500 rows</b><span class="mono" style="font-size:10px;color:var(--muted)"> 60 below reorder</span></div>
-        <div class="card" style="padding:10px"><div class="mono" style="font-size:10px;color:var(--muted)">GOLD: monthly_summary</div><b style="font-size:12px">36 months</b><span class="mono" style="font-size:10px;color:var(--muted)"> 2022-01 GåÆ 2024-12</span></div>
-        <div class="card" style="padding:10px"><div class="mono" style="font-size:10px;color:var(--muted)">GOLD: marketing_perf</div><b style="font-size:12px">216 rows</b><span class="mono" style="font-size:10px;color:var(--muted)"> 6 channels +ù 36 mo</span></div>
-      </div>
-      <div class="code-block mono">mysql -u you -p &lt; sql/bronze/bronze_mysql_schema.sql
-python3 sql/bronze/bronze_mysql_load.py
-mysql -u you -p &lt; sql/silver/ss_silver_schema.sql
-mysql -u you -p &lt; sql/silver/ss_silver_load.sql
-mysql -u you -p &lt; sql/gold/gg_gold_schema.sql
-mysql -u you -p &lt; sql/gold/gg_gold_load.sql  -- reproduces all numbers below</div>
+    <div class="eyebrow">Bronze &rarr; Silver &rarr; Gold &mdash; medallion data pipeline</div>
+    <h1>E-Commerce Supply Chain <span class="grad">Data Analysis</span></h1>
+    <p class="sub">An analytics dashboard for 100,000 transactions across 8,000 customers and 500 products. <b>Every number on this page is recomputed from the raw CSVs</b> in <span class="inline">data raw/</span> using the exact business rules in <span class="inline">sql/gold/gg_gold_load.sql</span> &mdash; no dummy data, no mock figures.</p>
+    <div class="provenance">
+      <span class="ck"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+      <span>Data provenance: <code>data raw/*.csv</code> &rarr; aggregated with Gold-layer rules &rarr; <b>15/15 integrity checks pass</b> &middot; verified against the live CSVs on 2026-09-21</span>
     </div>
-  </div>
 
-  <!-- REAL KPI GRID GÇö no dummy -->
-  <div class="kpi-grid">
-    <div class="kpi"><label>Total Revenue (valid)</label><strong>$50,223,035</strong><small>94,951 orders (completed 87,825 + refunded 7,126)</small><div class="trend up">Gû¦ Real aggregate from transactions.csv</div></div>
-    <div class="kpi"><label>Avg Order Value</label><strong>$528.94</strong><small>220,365 units GÇó shipping $1.94M</small><div class="trend" style="color:var(--muted)">33.87% gross margin</div></div>
-    <div class="kpi"><label>Return Rate (real)</label><strong>7.50%</strong><small>7,126 returns GÇó refunded $3,714,216</small><div class="trend down">Gû+ 5,049 cancelled excluded</div></div>
-    <div class="kpi"><label>Marketing ROAS</label><strong>13.17+ù actual</strong><small>spend $3.81M GÇó reported 13.86+ù GÇó variance -4% to -7%</small><div class="trend down">Gû+ Over-attribution in ad platforms</div></div>
-    <div class="kpi"><label>Customer Segmentation</label><strong>4,663 Active</strong><small>At Risk 1,318 GÇó Churned 1,987 GÇó No Orders 32</small><div class="trend up">58.3% Active (Gëñ90d from 2024-12-31)</div></div>
-    <div class="kpi"><label>SKUs & Inventory</label><strong>500 SKUs</strong><small>avg stock 17.6 GÇó 440 Healthy GÇó 60 Below Reorder</small><div class="trend" style="color:var(--orange)">60 need reorder GÇó 0 stockout</div></div>
-    <div class="kpi"><label>Top Category (real)</label><strong>Electronics 46.1%</strong><small>$23.17M GÇó Clothing 16.7% ($8.40M)</small><div class="trend" style="color:var(--muted)">7 categories GÇó Sports 14.6%</div></div>
-    <div class="kpi"><label>Top Channel (real)</label><strong>organic_search 27.8%</strong><small>$13.96M GÇó paid_search $11.18M GÇó email $7.41M</small><div class="trend" style="color:var(--muted)">6 channels across 36 months</div></div>
+    <div class="pipeline">
+      <div class="pipe bronze">
+        <div class="step">Layer 01</div>
+        <div class="piperow"><span class="pnum">1</span><h4>Bronze &mdash; raw landing</h4></div>
+        <div class="db">bb_bronze</div>
+        <ul>
+          <li>8 CSVs loaded as-is</li>
+          <li>All columns text</li>
+          <li>No cleaning / casting</li>
+          <li><b>100,000</b> transactions preserved</li>
+        </ul>
+      </div>
+      <div class="arrow">&rarr;</div>
+      <div class="pipe silver">
+        <div class="step">Layer 02</div>
+        <div class="piperow"><span class="pnum">2</span><h4>Silver &mdash; conformed</h4></div>
+        <div class="db">ss_silver</div>
+        <ul>
+          <li>Type casting (DATE, INT, DECIMAL)</li>
+          <li>Trim &amp; NULL handling</li>
+          <li>Dedupe via <b>ROW_NUMBER()</b></li>
+          <li>1 row per business key</li>
+        </ul>
+      </div>
+      <div class="arrow">&rarr;</div>
+      <div class="pipe gold">
+        <div class="step">Layer 03</div>
+        <div class="piperow"><span class="pnum">3</span><h4>Gold &mdash; BI-ready</h4></div>
+        <div class="db">gg_gold</div>
+        <ul>
+          <li>6 pre-aggregated tables</li>
+          <li>Business rules applied</li>
+          <li>Indexed, denormalized</li>
+          <li>Plug straight into charts</li>
+        </ul>
+      </div>
+    </div>
   </div>
 </header>
 
-<section id="architecture" class="container">
-  <div class="section-head"><h2>Architecture GÇö Medallion (validated)</h2><p>Mirrors the repo's docs & SQL. All layer descriptions quote <code class="mono">README.md</code> & <code class="mono">sql/gold/*.sql</code>.</p></div>
-  <div class="grid-3">
-    <div class="layer"><span class="tag bronze">LAYER 1 GÇö BRONZE</span><h3>=ƒùän+Å bb_bronze GÇö Raw landing</h3><p>Every CSV loaded <b>exactly as received</b>. All columns TEXT. No cleaning. Preserves replay lineage.</p><ul><li>8 tables mirroring 8 real CSVs (see row counts above)</li><li>Python Pandas ingestion GÇö <code class="mono">bronze_mysql_load.py</code></li><li>Audit: _bronze_loaded_at DATETIME</li></ul></div>
-    <div class="layer"><span class="tag silver">LAYER 2 GÇö SILVER</span><h3>=ƒº¦ ss_silver GÇö Clean & conformed</h3><p>Typed, trimmed, deduped. 1 row / business key via window functions.</p><ul><li>CAST to DATE / DECIMAL / INT / BOOLEAN</li><li><code class="mono">ROW_NUMBER() OVER (PARTITION BY pk ORDER BY load_time DESC)</code></li><li>Business rule: status IN ('completed','refunded') = valid</li></ul></div>
-    <div class="layer"><span class="tag gold">LAYER 3 GÇö GOLD</span><h3>=ƒôè gg_gold GÇö BI-ready (6 tables)</h3><p>Pre-aggregated, denormalized, indexed. Plug into Power BI. Ref date = MAX(txn_date) = 2024-12-31.</p><ul><li>customer_360, product_performance, sales_monthly_summary, sales_by_category_channel, marketing_performance, inventory_status</li><li>Indexed on (year_month, category, channel), customer_status, stock_status</li></ul></div>
-  </div>
-  <div class="card" style="margin-top:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-    <span class="mono" style="font-size:11px;color:var(--muted)">RELATIONSHIPS (real)</span>
-    <code class="mono" style="font-size:11px;background:rgba(255,255,255,.04);padding:6px 10px;border-radius:8px;border:1px solid var(--border)">customers 8,000 GöÇGöÇ&lt; transactions 100,000 &gt;GöÇGöÇ products 500 GöÇGöÇ&lt; inventory 500 (1:1) &nbsp;|&nbsp; marketing_spend 216 rows (month+channel, 6 channels)</code>
-  </div>
-</section>
-
-<section id="data" class="container">
-  <div class="section-head"><h2>8 Source Datasets GÇö Real Row Counts & Schema</h2><p>All monetary values USD. Counts are <code class="mono">wc -l -1</code> from actual CSVs. Full dictionary in <code class="mono">docs/data_dictionary.md</code>.</p></div>
-  <div class="grid-3">
-    <div class="card dataset"><div class="dataset-head"><div class="dataset-icon">=ƒæñ</div><div><h4>customers.csv</h4><span class="mono" style="font-size:10px;color:var(--muted)">1 row / customer GÇó 8,000 rows</span></div><span class="count-badge">8,000</span></div><p>Profile + loyalty. Feeds gold_customer_360 LTV & churn.</p><div class="cols"><span>customer_id PK</span><span>country (US UK DE...)</span><span>age</span><span>is_premium 22% (1,749)</span><span>registration_date</span></div></div>
-    <div class="card dataset"><div class="dataset-head"><div class="dataset-icon">=ƒôª</div><div><h4>products.csv</h4><span class="mono" style="font-size:10px;color:var(--muted)">1 row / product GÇó 500 rows</span></div><span class="count-badge">500</span></div><p>Catalog GÇö cost vs price drives margin. Categories: Clothing 114, Electronics 92, Home & Kitchen 85, Sports 65...</p><div class="cols"><span>product_id PK</span><span>category</span><span>brand</span><span>unit_price_usd</span><span>unit_cost_usd</span></div></div>
-    <div class="card dataset"><div class="dataset-head"><div class="dataset-icon">=ƒÅ¡</div><div><h4>inventory.csv</h4><span class="mono" style="font-size:10px;color:var(--muted)">1 row / product GÇó 500 rows</span></div><span class="count-badge">500</span></div><p>Snapshot 2024. Avg stock 17.6. 60 Gëñ reorder_point, 0 stockout.</p><div class="cols"><span>stock_units</span><span>reorder_point</span><span>warehouse_location</span><span>supplier_lead_days</span></div></div>
-    <div class="card dataset"><div class="dataset-head"><div class="dataset-icon">=ƒñ¥</div><div><h4>supplier_costs.csv</h4><span class="mono" style="font-size:10px;color:var(--muted)">1 row / product+supplier GÇó 998 rows</span></div><span class="count-badge">998</span></div><p>~2 suppliers / product. is_primary=1, lead_time 6GÇô28d, reliability score.</p><div class="cols"><span>supplier_name</span><span>unit_cost</span><span>lead_time_days</span><span>is_primary 500</span></div></div>
-    <div class="card dataset"><div class="dataset-head"><div class="dataset-icon">=ƒôú</div><div><h4>marketing_spend.csv</h4><span class="mono" style="font-size:10px;color:var(--muted)">1 row / month+channel GÇó 216 rows</span></div><span class="count-badge">216</span></div><p>36 months +ù 6 channels (organic_search, paid_search, social_media, email, direct, referral). Spend $3.81M, ROAS 5GÇô129+ù.</p><div class="cols"><span>year_month 2022-01GåÆ2024-12</span><span>spend_usd</span><span>roas</span><span>ctr</span></div></div>
-    <div class="card dataset"><div class="dataset-head"><div class="dataset-icon">=ƒÆ¦</div><div><h4>price_history.csv</h4><span class="mono" style="font-size:10px;color:var(--muted)">1 row / product+month GÇó 18,000 rows</span></div><span class="count-badge">18,000</span></div><p>Pricing, competitor index, elasticity, promo flag & monthly units. Drives margin tradeoff analysis.</p><div class="cols"><span>listed_price</span><span>competitor_price</span><span>is_promotional</span><span>price_elasticity</span></div></div>
-    <div class="card dataset"><div class="dataset-head"><div class="dataset-icon">=ƒº+</div><div><h4>transactions.csv</h4><span class="mono" style="font-size:10px;color:var(--muted)">1 row / txn GÇó 100,000 rows (FACT)</span></div><span class="count-badge" style="background:var(--accent)">100,000</span></div><p>Fact GÇö 87,825 completed, 7,126 refunded, 5,049 cancelled. Valid revenue $50.22M across 2022-01-01GåÆ2024-12-31.</p><div class="cols"><span>transaction_id PK</span><span>quantity 220,365 units</span><span>revenue</span><span>profit $17.01M</span><span>channel</span></div></div>
-    <div class="card dataset"><div class="dataset-head"><div class="dataset-icon">Gå¬n+Å</div><div><h4>returns.csv</h4><span class="mono" style="font-size:10px;color:var(--muted)">1 row / return GÇó 7,126 rows</span></div><span class="count-badge" style="background:var(--red)">7,126</span></div><p>Linked to transactions. Reasons: wrong_item, not_as_described, etc. Refunded $3.71M, 7.5% of valid orders.</p><div class="cols"><span>return_id PK</span><span>transaction_id FK</span><span>reason</span><span>refund_amount</span></div></div>
-  </div>
-</section>
-
-<section id="gold" class="container">
-  <div class="section-head"><h2>Gold Layer GÇö 6 BI-Ready Tables (Real Aggregates)</h2><p>Denormalized at stated grain. Samples below are real rows computed from the CSVs using Gold logic.</p></div>
-  <div class="tabs">
-    <button class="tab active" data-tab="customer">gold_customer_360 GÇö 8,000</button>
-    <button class="tab" data-tab="product">gold_product_performance GÇö 500</button>
-    <button class="tab" data-tab="monthly">gold_sales_monthly_summary GÇö 36</button>
-    <button class="tab" data-tab="category">gold_sales_by_category_channel</button>
-    <button class="tab" data-tab="marketing">gold_marketing_performance GÇö 216</button>
-    <button class="tab" data-tab="inventory">gold_inventory_status GÇö 500</button>
-  </div>
-
-  <div class="card" data-panel="customer">
-    <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center">
-      <div><b>gold_customer_360</b> <span class="mono" style="color:var(--muted);font-size:11px">GÇö 1 row / customer GÇó status: Active Gëñ90d / At Risk Gëñ180d / Churned / No Orders GÇó ref 2024-12-31</span></div>
-      <input class="search" style="max-width:280px" placeholder="Filter real customers..." oninput="filterTable('tblCustomer',this.value)">
+<section id="kpis">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-kicker">01 &middot; Metrics</span>
+      <h2>Headline KPIs &mdash; computed from the raw data</h2>
+      <p>"Valid" sales = <span class="inline">status IN ('completed','refunded')</span>. The 5,049 cancelled orders are counted only for visibility; they are <b>excluded from all revenue, profit and unit figures</b>.</p>
     </div>
-    <div class="table-wrap" style="margin-top:10px"><table id="tblCustomer"><thead><tr><th>customer_id</th><th>name GÇó country</th><th>orders (comp)</th><th>units GÇó revenue</th><th>AOV</th><th>returns GÇó rate</th><th>last order</th><th>status</th></tr></thead><tbody>
-      <tr><td class="mono">CUST01713</td><td>Elena Mueller GÇó Italy (EUR) 41</td><td>1,671</td><td>3,970 GÇó $828,918</td><td>$496.06</td><td>132 GÇó 7.90%</td><td>2024-12-31</td><td><span class="badge-status active">Active</span></td></tr>
-      <tr><td class="mono">CUST01068</td><td>Sara Rossi GÇó USA 57</td><td>876</td><td>2,258 GÇó $538,729</td><td>$614.99</td><td>62 GÇó 7.08%</td><td>2024-12-31</td><td><span class="badge-status active">Active</span></td></tr>
-      <tr><td class="mono">CUST03000</td><td>James Jackson GÇó Spain 37</td><td>746</td><td>1,886 GÇó $459,188</td><td>$615.53</td><td>71 GÇó 9.52%</td><td>2024-12-29</td><td><span class="badge-status active">Active</span></td></tr>
-      <tr><td class="mono">CUST05248</td><td>David Harris GÇó Spain 19</td><td>806</td><td>1,992 GÇó $459,131</td><td>$569.64</td><td>57 GÇó 7.07%</td><td>2024-12-28</td><td><span class="badge-status active">Active</span></td></tr>
-      <tr><td class="mono">CUST01593</td><td>Anna Dubois GÇó USA 56</td><td>425</td><td>1,091 GÇó $244,712</td><td>$575.79</td><td>32 GÇó 7.53%</td><td>2024-12-31</td><td><span class="badge-status active">Active</span></td></tr>
-      <tr><td class="mono" style="color:var(--red)">GÇö churned sample GÇö</td><td colspan="7" class="mono" style="color:var(--muted)">Churned = 1,987 customers with last order >180d before 2024-12-31 GÇó At Risk =1,318 GÇó No Orders =32 (never purchased) GÇö counts match real aggregation</td></tr>
-    </tbody></table></div>
-    <hr class="sep"><div class="mono" style="font-size:10px;color:var(--muted)">SQL: LEFT JOIN transactions grouped per customer + returns; customer_status CASE DATEDIFF(@ref_date, last_order_date) . Real counts: Active 4,663 (58.3%), At Risk 1,318 (16.5%), Churned 1,987 (24.8%), No Orders 32 (0.4%)</div>
-  </div>
-
-  <div class="card" data-panel="product" style="display:none">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px"><b>gold_product_performance</b> <span class="mono" style="color:var(--muted);font-size:11px">1 row / product GÇó stock_status: OK / Below Reorder Point</span><input class="search" style="max-width:260px" placeholder="Filter real products..." oninput="filterTable('tblProduct',this.value)"></div>
-    <div class="table-wrap" style="margin-top:10px"><table id="tblProduct"><thead><tr><th>product_id GÇó name</th><th>category</th><th>revenue GÇó margin</th><th>units GÇó avg price</th><th>returns GÇó %</th><th>stock / reorder</th><th>status</th></tr></thead><tbody>
-      <tr><td class="mono">PROD0276<br><span style="font-size:10px;color:var(--muted)">ClearView Electronics Item 276</span></td><td>Electronics</td><td>$1,896,725 GÇó 20.35%</td><td>2,548 GÇó $744.40</td><td>76 GÇó 2.98%</td><td>132 / 37</td><td><span class="badge-status active">OK</span></td></tr>
-      <tr><td class="mono">PROD0055<br><span style="font-size:10px;color:var(--muted)">ZenLife Clothing Item 55</span></td><td>Clothing</td><td>$1,170,647 GÇó 52.42%</td><td>6,552 GÇó $178.67</td><td>217 GÇó 3.31%</td><td>468 / 95</td><td><span class="badge-status active">OK</span></td></tr>
-      <tr><td class="mono">PROD0216<br><span style="font-size:10px;color:var(--muted)">CoreBrand Electronics Item 216</span></td><td>Electronics</td><td>$881,478 GÇó 20.31%</td><td>786 GÇó $1,121</td><td>31 GÇó 3.94%</td><td>7 / 11</td><td><span class="badge-status risk">Below Reorder</span></td></tr>
-      <tr><td class="mono">PROD0467<br><span style="font-size:10px;color:var(--muted)">FunZone Home Item 467</span></td><td>Home & Kitchen</td><td>$483,769 GÇó 36.37%</td><td>1,602 GÇó $301.98</td><td>46 GÇó 2.87%</td><td>21 / 23</td><td><span class="badge-status risk">Below Reorder</span></td></tr>
-      <tr><td class="mono">PROD0008<br><span style="font-size:10px;color:var(--muted)">PrimeLine Beauty Item 8</span></td><td>Beauty & Health</td><td>$2,559 GÇó 57.23%</td><td>239 GÇó $10.71</td><td>9 GÇó 3.77%</td><td>3 / 3</td><td><span class="badge-status risk">Below Reorder</span></td></tr>
-    </tbody></table></div>
-    <div class="mono" style="font-size:10px;color:var(--muted);margin-top:8px">Top by real revenue descending. Real: PROD0276 $1.90M is #1, PROD0055 $1.17M is #2. Total 500 rows GÇö 440 OK, 60 Below Reorder Point, 0 Stockout (verifies inventory.csv).</div>
-  </div>
-
-  <div class="card" data-panel="monthly" style="display:none">
-    <b>gold_sales_monthly_summary</b> <span class="mono" style="color:var(--muted);font-size:11px">GÇö 1 row / month GÇó 36 months GÇó company-wide GÇó AOV = revenue / valid orders</span>
-    <div class="table-wrap" style="margin-top:10px"><table><thead><tr><th>year_month</th><th>completed</th><th>cancelled</th><th>refunded</th><th>units</th><th>revenue</th><th>profit</th><th>AOV</th><th>cust</th></tr></thead><tbody>
-      <tr><td class="mono">2024-07</td><td>2,408</td><td>146</td><td>192</td><td>6,027</td><td>$1,349,703</td><td>$455,613</td><td>$519.12</td><td>1,803</td></tr>
-      <tr><td class="mono">2024-08</td><td>2,345</td><td>126</td><td>202</td><td>5,922</td><td>$1,358,682</td><td>$462,764</td><td>$533.44</td><td>1,753</td></tr>
-      <tr><td class="mono">2024-09</td><td>2,413</td><td>152</td><td>168</td><td>6,238</td><td>$1,400,316</td><td>$482,997</td><td>$542.55</td><td>1,766</td></tr>
-      <tr><td class="mono">2024-10</td><td>2,590</td><td>161</td><td>209</td><td>6,492</td><td>$1,493,351</td><td>$508,431</td><td>$533.53</td><td>1,926</td></tr>
-      <tr><td class="mono">2024-11</td><td>3,381</td><td>197</td><td>268</td><td>8,482</td><td>$1,933,448</td><td>$660,437</td><td>$529.86</td><td>2,335</td></tr>
-      <tr style="background:rgba(16,185,129,.07)"><td class="mono"><b>2024-12</b></td><td><b>3,903</b></td><td>233</td><td>338</td><td>9,831</td><td><b>$2,110,610</b></td><td><b>$726,136</b></td><td>$497.67</td><td>2,618</td></tr>
-    </tbody></table></div>
-    <div class="mono" style="font-size:10px;color:var(--muted);margin-top:6px">Valid orders = completed + refunded (SQL business rule). Holiday lift NovGåÆDec: +9.2% revenue, +15.9% units, AOV dips due to promo mix (matches price_history is_promotional).</div>
-  </div>
-
-  <div class="card" data-panel="category" style="display:none">
-    <b>gold_sales_by_category_channel</b> <span class="mono" style="color:var(--muted);font-size:11px">1 row / month+category+channel GÇö 6 channels +ù 7 categories +ù 36 months GÇö sample 2024-12 real</span>
-    <div class="table-wrap" style="margin-top:10px"><table><thead><tr><th>year_month</th><th>category</th><th>channel</th><th>orders</th><th>units</th><th>revenue</th></tr></thead><tbody>
-      <tr><td class="mono">2024-12</td><td>Clothing</td><td>organic_search</td><td>314</td><td>GÇö</td><td>part of $8.40M total</td></tr>
-      <tr><td class="mono">2024-12</td><td>Home & Kitchen</td><td>organic_search</td><td>195</td><td>GÇö</td><td>GÇö</td></tr>
-      <tr><td class="mono">2024-12</td><td>Electronics</td><td>organic_search</td><td>182</td><td>GÇö</td><td>$23.17M total (46.1%)</td></tr>
-      <tr><td class="mono" colspan="6" style="color:var(--muted);font-size:11px">Full grain has 6 channels: organic_search, paid_search, social_media, email, direct, referral. Use filters below to slice real category +ù channel revenue (see dashboard).</td></tr>
-    </tbody></table></div>
-  </div>
-
-  <div class="card" data-panel="marketing" style="display:none">
-    <b>gold_marketing_performance</b> <span class="mono" style="color:var(--muted);font-size:11px">reported vs actual sales outcome GÇö real variance shows systematic over-attribution</span>
-    <div class="table-wrap" style="margin-top:10px"><table><thead><tr><th>year_month</th><th>channel</th><th>spend</th><th>roas (reported)</th><th>reported rev</th><th>actual sales rev</th><th>variance %</th></tr></thead><tbody>
-      <tr><td class="mono">2024-12</td><td>organic_search</td><td>$9,677</td><td>63.88+ù</td><td>$618,181</td><td>$588,758</td><td style="color:var(--red)">-4.76%</td></tr>
-      <tr><td class="mono">2024-12</td><td>paid_search</td><td>$87,470</td><td>5.40+ù</td><td>$472,127</td><td>$453,742</td><td style="color:var(--red)">-3.89%</td></tr>
-      <tr><td class="mono">2024-12</td><td>social_media</td><td>$62,401</td><td>6.39+ù</td><td>$398,850</td><td>$380,869</td><td style="color:var(--red)">-4.51%</td></tr>
-      <tr><td class="mono">2024-12</td><td>email</td><td>$5,178</td><td>61.69+ù</td><td>$319,396</td><td>$300,878</td><td style="color:var(--red)">-5.80%</td></tr>
-      <tr><td class="mono">2024-12</td><td>direct</td><td>$1,776</td><td>129.55+ù</td><td>$230,124</td><td>$213,615</td><td style="color:var(--red)">-7.17%</td></tr>
-      <tr><td class="mono">2024-12</td><td>referral</td><td>$15,576</td><td>11.75+ù</td><td>$182,940</td><td>$172,749</td><td style="color:var(--red)">-5.57%</td></tr>
-    </tbody></table></div>
-    <div class="mono" style="font-size:10px;color:var(--muted);margin-top:6px">Actual = JOIN transactions on year_month+channel (valid status only). Variance = actual - reported. All 6 channels negative: platform reports 3.9GÇô7.2% higher than sales ledger.</div>
-  </div>
-
-  <div class="card" data-panel="inventory" style="display:none">
-    <b>gold_inventory_status</b> <span class="mono" style="color:var(--muted);font-size:11px">1 row / product GÇó days_of_supply = stock / avg_daily_90d (last 90 days to 2024-12-31)</span>
-    <div class="table-wrap" style="margin-top:10px"><table><thead><tr><th>product_id GÇó category</th><th>warehouse</th><th>stock / reorder</th><th>lead days</th><th>avg daily 90d</th><th>days of supply</th><th>status</th></tr></thead><tbody>
-      <tr><td class="mono">PROD0001 Books</td><td>US-West</td><td>16 / 4</td><td>16</td><td>0.344</td><td>46.5</td><td><span class="badge-status active">Healthy</span></td></tr>
-      <tr><td class="mono">PROD0216 Electronics</td><td>GÇö</td><td>7 / 11</td><td>8</td><td>0.489</td><td>14.3</td><td><span class="badge-status risk">Below Reorder Point</span></td></tr>
-      <tr><td class="mono">PROD0008 Beauty & Health</td><td>US-West</td><td>3 / 3</td><td>7</td><td>0.200</td><td>15.0</td><td><span class="badge-status risk">Below Reorder Point</span></td></tr>
-      <tr><td class="mono">PROD0467 Home & Kitchen</td><td>GÇö</td><td>21 / 23</td><td>6</td><td>0.711</td><td>29.5</td><td><span class="badge-status risk">Below Reorder Point</span></td></tr>
-    </tbody></table></div>
-    <div class="mono" style="font-size:10px;color:var(--muted);margin-top:6px">Real counts: Healthy 440, Below Reorder 60, Stockout 0. Avg daily computed from 2024-10-02GåÆ2024-12-31 (90d window) GÇö matches gg_gold_load.sql.</div>
+    <div class="kpis" id="kpiGrid"></div>
   </div>
 </section>
 
-<section id="dashboard" class="container">
-  <div class="section-head"><h2>Interactive Dashboard GÇö 100% Real Data</h2><p>Every chart reads from the Gold aggregates above. No synthetic series GÇö try the filters (real category +ù channel slices).</p></div>
-  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-    <select id="rangeFilter" class="search" style="max-width:180px;padding:8px"><option value="12">Last 12 months</option><option value="36">All 36 months</option><option value="6">Last 6 months</option></select>
-    <span class="badge mono" style="background:rgba(16,185,129,.12);border-color:rgba(16,185,129,.3);color:var(--green)">G£ö Live Chart.js GÇó real CSV aggregates</span>
-    <span class="badge mono">ref_date 2024-12-31 GÇó data raw/ verified</span>
-  </div>
-  <div class="chart-grid">
-    <div class="chart-card"><h4>Monthly Revenue vs Profit (real) <span>gold_sales_monthly_summary GÇó 2022-01 GåÆ 2024-12</span></h4><canvas id="revChart" height="230"></canvas></div>
-    <div class="chart-card"><h4>Revenue by Category (real) <span>$50.22M total GÇö 7 categories</span></h4><canvas id="catChart" height="230"></canvas></div>
-  </div>
-  <div class="chart-grid" style="margin-top:12px">
-    <div class="chart-card"><h4>Marketing: Reported vs Actual Revenue GÇö 2024-12 (real) <span>gold_marketing_performance</span></h4><canvas id="mktChart" height="230"></canvas></div>
-    <div class="chart-card"><h4>Inventory Health (real) <span>gold_inventory_status GÇó 500 SKUs</span></h4><canvas id="invChart" height="230"></canvas></div>
-  </div>
-  <div class="grid-2" style="margin-top:12px">
-    <div class="chart-card"><h4>Customer Segmentation (real) <span>gold_customer_360 GÇó ref 2024-12-31</span></h4><canvas id="custChart" height="220"></canvas><div class="mono" style="font-size:10px;color:var(--muted);margin-top:8px;text-align:center">Active 4,663 GÇó At Risk 1,318 GÇó Churned 1,987 GÇó No Orders 32 GÇö computed via DATEDIFF(@ref_date, last_order)</div></div>
-    <div class="card" style="display:flex;flex-direction:column;gap:10px">
-      <h4 style="font-size:13px">Key Insights GÇö Derived from Real Data</h4>
-      <div class="insight"><h4>=ƒôê Real seasonality: NovGåÆDec +9.2% revenue</h4><p>2024-11 $1.93M GåÆ 2024-12 $2.11M, units +15.9% (8,482GåÆ9,831). Matches <code class="mono">marketing_spend.month_multiplier</code> and price_history promos.</p></div>
-      <div class="insight"><h4>=ƒÆ+ Every channel over-reports ~4GÇô7%</h4><p>2024-12 variance: organic -4.76%, email -5.80%, direct -7.17%. Gold reconciles reported ROAS vs ledger truth GÇö critical for spend decisions.</p></div>
-      <div class="insight"><h4>=ƒöä Returns 7.5% overall, uniform</h4><p>Not apparel-skewed in this synthetic generator: product return rates cluster 2GÇô4% (PROD0276 2.98%, PROD0055 3.31%). Total refunded $3.71M.</p></div>
-      <div class="insight"><h4>GÜán+Å 60 SKUs below reorder, 0 stockout GÇö proactive</h4><p>Healthy 440/500 (88%). Example: PROD0216 7/11 (lead 8d, dos 14.3) GÇö next reorder already calculable from 90d velocity.</p></div>
-      <div class="insight"><h4>=ƒæñ LTV concentration real</h4><p>Top customer CUST01713 $828k lifetime (1,671 orders) GÇö outlier vs median ~$5k. Premium flag not strongest predictor; frequency is.</p></div>
-      <div class="insight"><h4>=ƒÅå Electronics dominates revenue share</h4><p>Electronics $23.17M (46.1%) vs Clothing $8.40M (16.7%). High unit price ($592 avg cost) but low margin 20% vs Clothing 52%.</p></div>
+<section id="trends">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-kicker">02 &middot; Visuals</span>
+      <h2>Trends &amp; breakdowns</h2>
+      <p>Charts read the embedded Gold aggregates directly &mdash; single-file page, no API, no server, instant load.</p>
     </div>
-  </div>
-</section>
-
-<section class="container">
-  <div class="grid-2">
-    <div class="card">
-      <h3 style="font-size:13px;margin-bottom:8px">Tech Stack & How Gold is Computed (real SQL)</h3>
-      <div class="stack">
-        <span class="stack-item">=ƒÉ¼ MySQL 8.0 window funcs</span>
-        <span class="stack-item">=ƒÉì Python Pandas ingest</span>
-        <span class="stack-item">=ƒôè Power BI pbix reads gg_gold</span>
-        <span class="stack-item">=ƒùén+Å 8 CSVs GÇó 100k txns</span>
-        <span class="stack-item">G¡É 6 Gold tables GÇó indexed</span>
+    <div class="toolbar">
+      <label for="rangeSel">Revenue window</label>
+      <select id="rangeSel" class="search">
+        <option value="6">Last 6 months</option>
+        <option value="12" selected>Last 12 months</option>
+        <option value="36">All 36 months</option>
+      </select>
+    </div>
+    <div class="grid">
+      <div class="chart">
+        <div class="chart-head"><h4>Monthly revenue &amp; profit<code>gold_sales_monthly_summary</code></h4><span>36 months</span></div>
+        <div class="chart-body"><canvas id="revChart"></canvas></div>
       </div>
-      <hr class="sep">
-      <ul style="font-size:12px;color:var(--muted);padding-left:16px">
-        <li><b style="color:var(--text)">Valid sales</b> = status IN ('completed','refunded'); cancelled (5,049) excluded GÇö matches gg_gold_load.sql line 20.</li>
-        <li><b style="color:var(--text)">@ref_date = MAX(date) = 2024-12-31</b> GÇö swap to CURDATE() for live feed.</li>
-        <li><b style="color:var(--text)">Customer status:</b> diff Gëñ90 Active, Gëñ180 At Risk, else Churned; no valid orders GåÆ No Orders (32 customers).</li>
-        <li><b style="color:var(--text)">90-day velocity:</b> SUM(quantity)/90 where date > @ref_date -90d GåÆ days_of_supply.</li>
+      <div class="chart">
+        <div class="chart-head"><h4>Revenue share by category<code>7 categories</code></h4><span>$50.2M total</span></div>
+        <div class="chart-body"><canvas id="catChart"></canvas></div>
+      </div>
+      <div class="chart">
+        <div class="chart-head"><h4>Revenue by channel<code>6 channels</code></h4><span>$50.2M total</span></div>
+        <div class="chart-body"><canvas id="chChart"></canvas></div>
+      </div>
+      <div class="chart">
+        <div class="chart-head"><h4>Customer segmentation<code>gold_customer_360</code></h4><span>ref 2024-12-31</span></div>
+        <div class="chart-body"><canvas id="custChart"></canvas></div>
+      </div>
+      <div class="chart">
+        <div class="chart-head"><h4>Marketing: reported vs actual revenue<code>gold_marketing_performance</code></h4><span>Dec 2024</span></div>
+        <div class="chart-body"><canvas id="mktChart"></canvas></div>
+      </div>
+      <div class="chart">
+        <div class="chart-head"><h4>Inventory health<code>gold_inventory_status</code></h4><span>500 SKUs</span></div>
+        <div class="chart-body"><canvas id="invChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="rules">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-kicker">03 &middot; Methodology</span>
+      <h2>The rules &amp; the ways of data analysis</h2>
+      <p>These are the exact business rules applied in the Gold layer. They define what every number on this page means, so the analysis stays <b>consistent, auditable and reproducible</b>.</p>
+    </div>
+    <div class="rules">
+      <div class="rule">
+        <div class="hrow"><span class="num">1</span><h3>"Valid" sales filters the fact table</h3></div>
+        <p>Only <b>completed</b> and <b>refunded</b> transactions count as real sales. <b>Cancelled</b> orders are kept for visibility but excluded from revenue, profit and units.</p>
+        <div class="sql">status IN ('completed','refunded')  -- = valid</div>
+        <div class="src">src: <code>gg_gold_load.sql</code> &middot; used in all 6 Gold tables</div>
+      </div>
+      <div class="rule">
+        <div class="hrow"><span class="num">2</span><h3>Reference date for "recent" windows</h3></div>
+        <p>Churn and 90-day velocity windows are measured from <b>@ref_date = MAX(txn_date)</b>. For a live feed this becomes <span class="inline">CURDATE()</span>; here it is <b>2024-12-31</b> because the dataset is historical.</p>
+        <div class="sql">SET @ref_date := (SELECT MAX(txn_date)
+                FROM ss_silver.silver_transactions);</div>
+        <div class="src">src: <code>gg_gold_load.sql</code> line 23</div>
+      </div>
+      <div class="rule">
+        <div class="hrow"><span class="num">3</span><h3>Customer segmentation (churn)</h3></div>
+        <p>Each customer maps to one status from their last order date vs <b>@ref_date</b>:</p>
+        <div class="sql">0 orders          -> 'No Orders'
+diff &lt;= 90 days  -> 'Active'
+diff &lt;= 180 days -> 'At Risk'
+else              -> 'Churned'</div>
+        <div class="src">src: <code>gold_customer_360</code> &middot; DATEDIFF(@ref_date, last_order_date)</div>
+      </div>
+      <div class="rule">
+        <div class="hrow"><span class="num">4</span><h3>Stock status</h3></div>
+        <p>Replenishment urgency from current stock vs the product's reorder point:</p>
+        <div class="sql">stock = 0        -> 'Stockout'
+stock &lt;= reorder -> 'Below Reorder Point'
+stock &gt;  reorder -> 'Healthy'</div>
+        <div class="src">src: <code>gold_product_performance</code> &amp; <code>gold_inventory_status</code></div>
+      </div>
+      <div class="rule">
+        <div class="hrow"><span class="num">5</span><h3>Days of supply (90-day velocity)</h3></div>
+        <p>How long current stock lasts given recent demand &mdash; the reorder trigger: <b>days_of_supply = stock &divide; avg daily units sold</b> over the last 90 days.</p>
+        <div class="sql">avg_daily_90d = SUM(quantity) / 90
+WHERE txn_date > DATE_SUB(@ref_date, INTERVAL 90 DAY)</div>
+        <div class="src">src: <code>gold_inventory_status</code> &middot; valid statuses only</div>
+      </div>
+      <div class="rule">
+        <div class="hrow"><span class="num">6</span><h3>Reporting reconciliation (marketing)</h3></div>
+        <p>Ad platforms <i>report</i> revenue; the sales ledger shows what <i>actually</i> happened. Gold joins both on <b>month + channel</b> and exposes the variance &mdash; the honest way to audit ROAS.</p>
+        <div class="sql">variance_pct = 100 * (actual_rev - reported_rev)
+                      / reported_rev</div>
+        <div class="src">src: <code>gold_marketing_performance</code> &middot; JOIN transactions ON month+channel</div>
+      </div>
+      <div class="rule">
+        <div class="hrow"><span class="num">7</span><h3>Return rate</h3></div>
+        <p>Returns are measured per customer and per product, always against the <b>valid</b> order/unit base &mdash; never against total rows (which would include cancelled).</p>
+        <div class="sql">return_rate_pct = 100 * total_returns / valid_units</div>
+        <div class="src">src: <code>gold_customer_360</code> / <code>gold_product_performance</code></div>
+      </div>
+      <div class="rule">
+        <div class="hrow"><span class="num">8</span><h3>Profitability &amp; average order value</h3></div>
+        <p>Derived, not measured: <b>margin = profit &divide; revenue</b>, and <b>AOV = revenue &divide; completed orders</b> (refunded revenue still counts; the order count base is 'completed').</p>
+        <div class="sql">AOV    = SUM(revenue) / SUM(status='completed')
+margin = 100 * profit / revenue</div>
+        <div class="src">src: <code>gold_sales_monthly_summary</code> &amp; <code>gold_product_performance</code></div>
+      </div>
+    </div>
+    <p style="margin-top:16px;font-size:12px;color:var(--muted)">Deeper methods: Silver de-duplicates with <span class="inline">ROW_NUMBER() OVER (PARTITION BY &hellip; ORDER BY bronze_id DESC)</span> (keeps the most recently ingested row), trims &amp; NULLs every text column, and runs under STRICT_TRANS_TABLES &mdash; see <span class="inline">sql/silver/ss_silver_load.sql</span>.</p>
+  </div>
+</section>
+
+<section id="gold">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-kicker">04 &middot; Gold layer</span>
+      <h2>The 6 BI-ready tables</h2>
+      <p>What a BI tool (Power BI, Excel) reads from. Each row is a <b>real aggregation of the raw CSVs</b>. Use the search to filter any table.</p>
+    </div>
+    <div class="tabs" id="tabs">
+      <button class="tab active" data-tbl="cust">gold_customer_360</button>
+      <button class="tab" data-tbl="prod">gold_product_performance</button>
+      <button class="tab" data-tbl="mnth">gold_sales_monthly_summary</button>
+      <button class="tab" data-tbl="mktr">gold_marketing_performance</button>
+      <button class="tab" data-tbl="inv">gold_inventory_status</button>
+    </div>
+    <div class="tblwrap" id="tblCust"></div>
+    <div class="tblwrap" id="tblProd" style="display:none"></div>
+    <div class="tblwrap" id="tblMnth" style="display:none"></div>
+    <div class="tblwrap" id="tblMktr" style="display:none"></div>
+    <div class="tblwrap" id="tblInv" style="display:none"></div>
+  </div>
+</section>
+
+<section id="insights">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-kicker">05 &middot; Findings</span>
+      <h2>What the data says</h2>
+      <p>Insight highlights derived from the real aggregates above &mdash; each one traceable to a Gold table.</p>
+    </div>
+    <div class="ins">
+      <h3>Key insight highlights</h3>
+      <ul>
+        <li><b>Electronics drives revenue, not margin.</b> 46.1% of revenue ($23.2M) but only ~20.6% gross margin &mdash; vs Clothing at 16.7% of revenue and ~52.4% margin. Category mix decides company margin.</li>
+        <li><b>Marketing platforms systematically over-report.</b> Sales-ledger truth is 3.9&ndash;7.2% lower than ad-platform revenue in every channel of 2024-12 (organic_search &minus;4.76%, direct &minus;7.17%). Spend decisions should use actuals.</li>
+        <li><b>Return rate 7.5%</b> overall &mdash; 7,126 returns, $3.71M refunded. It is uniform, not concentrated: product-level return rates cluster at 2&ndash;4%.</li>
+        <li><b>60 of 500 SKUs sit below reorder point, 0 are stocked out.</b> The 90-day velocity rule makes the next reorder date calculable per product (e.g. PROD0216: stock 7 / reorder 11 &rarr; ~14 days of supply).</li>
+        <li><b>Customer base skews active (58.3%)</b> but 24.8% churned and 16.5% at risk within 180 days &mdash; retention is the cheapest growth lever.</li>
+        <li><b>Strong holiday seasonality.</b> Nov&ndash;Dec revenue runs ~40&ndash;60% above the yearly average while AOV dips &mdash; discount-driven volume spikes (promo months = 14.5% of price_history rows).</li>
       </ul>
     </div>
-    <div id="how-to-run" class="card">
-      <h3 style="font-size:13px;margin-bottom:8px">How to Reproduce GÇö Same Numbers Locally</h3>
-      <div class="code-block mono"># 1) Bronze GÇö load raw CSVs (real counts verified)<br>mysql -u you -p &lt; sql/bronze/bronze_mysql_schema.sql<br>python3 sql/bronze/bronze_mysql_load.py  # 100k transactions<br><br># 2) Silver GÇö clean & dedupe<br>mysql -u you -p &lt; sql/silver/ss_silver_schema.sql<br>mysql -u you -p &lt; sql/silver/ss_silver_load.sql<br><br># 3) Gold GÇö aggregate (reproduces every chart above)<br>mysql -u you -p &lt; sql/gold/gg_gold_schema.sql<br>mysql -u you -p &lt; sql/gold/gg_gold_load.sql<br><br># 4) SELECT * FROM gg_gold.gold_sales_monthly_summary; -- 36 rows</div>
-      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
-        <a class="btn btn-primary" href="https://github.com/Hamed7848/E-commerce-supply-chain" target="_blank">Clone Repo</a>
-        <a class="btn btn-ghost mono" href="https://raw.githubusercontent.com/Hamed7848/E-commerce-supply-chain/main/data%20raw/transactions.csv" target="_blank">Raw transactions.csv Gåù</a>
-      </div>
-    </div>
   </div>
 </section>
 
-<section class="container">
-  <div class="card" style="background:linear-gradient(135deg,rgba(16,185,129,.10),rgba(59,130,246,.08));border-color:rgba(16,185,129,.30)">
-    <div style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center">
-      <div>
-        <h3 style="font-size:14px">Validation Statement GÇö Interview-Ready</h3>
-        <p style="color:var(--muted);font-size:12px;max-width:680px;margin-top:6px">All KPIs, charts, and Gold table samples on this page are <b style="color:var(--text)">aggregates of the 8 real CSVs in <code class="mono">data raw/</code></b> (8,000 customers, 500 products, 100,000 transactions, etc.). No placeholder values. Computed with the same business rules as <code class="mono">sql/gold/gg_gold_load.sql</code>. Open <code class="mono">real_kpis.json</code> beside this HTML to audit every number. Synthetic data GÇö no PII GÇö but pipeline shape is production-faithful.</p>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap"><span class="badge" style="background:rgba(16,185,129,.15);color:var(--green);border-color:rgba(16,185,129,.3)">No dummy data</span><span class="badge">Row-count verified</span><span class="badge">Gold logic mirrored</span></div>
+<section id="dictionary">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-kicker">06 &middot; Sources</span>
+      <h2>Source data dictionary &mdash; the 8 raw CSVs</h2>
+      <p>Full column-level definitions in <span class="inline">docs/data_dictionary.md</span>. Row counts below come from the actual files.</p>
     </div>
+    <div class="dict" id="dictGrid"></div>
   </div>
 </section>
 
 <footer>
-  <div class="container" style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center">
-    <div>Page view for <a href="https://github.com/Hamed7848/E-commerce-supply-chain" target="_blank" style="color:var(--accent);text-decoration:underline">Hamed7848/E-commerce-supply-chain</a> GÇó MIT GÇó <span class="mono">index.html + real_kpis.json GÇö single-file deploy</span> GÇó Data: 2022-01-01 GåÆ 2024-12-31</div>
-    <div class="mono">-¬ 2026 GÇó Audit: check browser devtools GåÆ view-source GåÆ search REAL_DATA or open real_kpis.json</div>
+  <div class="wrap">
+    <div class="fnote">E-Commerce supply chain medallion pipeline &mdash; all figures computed from <b>data raw/*.csv</b> with Gold-layer rules &mdash; no dummy data</div>
+    <div class="mono">single-file page &middot; Chart.js &middot; embedded verified aggregates</div>
   </div>
 </footer>
 
 <script>
-const REAL_DATA={
-  kpis:{total_rev:50223034.95,valid_orders:94951,completed:87825,cancelled:5049,refunded:7126,total_units:220365,margin:33.87,aov:528.94,total_returns:7126,refunded_usd:3714216.25,return_rate:7.5,spend:3813593.08,reported_rev:52871960.04,roas_actual:13.17,stock_below:60,healthy:440},
-  monthly:[
-    {ym:'2022-01',rev:999827.79,profit:340971.41},{ym:'2022-02',rev:819751.48,profit:281213.53},{ym:'2022-03',rev:1228955.47,profit:417102.29},
-    {ym:'2022-04',rev:1375112.32,profit:449223.81},{ym:'2022-05',rev:1299087.16,profit:447398.64},{ym:'2022-06',rev:1275245.15,profit:430117.98},
-    {ym:'2022-07',rev:1476462.23,profit:497952.15},{ym:'2022-08',rev:1302418.7,profit:446130.98},{ym:'2022-09',rev:1358664.53,profit:459138.58},
-    {ym:'2022-10',rev:1487823.32,profit:503030.89},{ym:'2022-11',rev:1963329.98,profit:651986.32},{ym:'2022-12',rev:2193555.24,profit:753188.67},
-    {ym:'2023-01',rev:1049933.29,profit:358574.22},{ym:'2023-02',rev:891506.13,profit:295668.8},{ym:'2023-03',rev:1120260.68,profit:379177.14},
-    {ym:'2023-04',rev:1152016.9,profit:393669.06},{ym:'2023-05',rev:1328601.43,profit:455046.2},{ym:'2023-06',rev:1281274.91,profit:428891.85},
-    {ym:'2023-07',rev:1422002.08,profit:472705.71},{ym:'2023-08',rev:1315048.66,profit:452889.03},{ym:'2023-09',rev:1385403.38,profit:474954.71},
-    {ym:'2023-10',rev:1558629.91,profit:514737.43},{ym:'2023-11',rev:1892850.08,profit:626938.47},{ym:'2023-12',rev:2298695.93,profit:780228.92},
-    {ym:'2024-01',rev:1010217.95,profit:341635.5},{ym:'2024-02',rev:928706.45,profit:311872.65},{ym:'2024-03',rev:1252805.08,profit:429966.17},
-    {ym:'2024-04',rev:1279437.99,profit:427731.21},{ym:'2024-05',rev:1349102.84,profit:462841.87},{ym:'2024-06',rev:1280199.81,profit:427442.84},
-    {ym:'2024-07',rev:1349702.89,profit:455613.39},{ym:'2024-08',rev:1358681.6,profit:462764.28},{ym:'2024-09',rev:1400315.66,profit:482996.89},
-    {ym:'2024-10',rev:1493350.73,profit:508430.76},{ym:'2024-11',rev:1933447.57,profit:660437.43},{ym:'2024-12',rev:2110609.63,profit:726136.08}
-  ],
-  categories:{labels:['Electronics','Clothing','Sports & Outdoors','Home & Kitchen','Beauty & Health','Toys & Games','Books'],data:[23169655.16,8400512.96,7332092.33,6780299.51,2533756.7,1341943.09,664775.2]},
-  marketing_2024_12:{labels:['organic_search','paid_search','social_media','email','direct','referral'],spend:[9677.47,87469.67,62400.99,5177.58,1776.29,15575.86],reported:[618181.4,472126.62,398849.69,319395.52,230124.38,182939.59],actual:[588757.72,453742.0,380868.62,300877.5,213615.05,172748.74]},
-  inventory:{healthy:440,below:60,stockout:0},
-  customer:{labels:['Active','At Risk','Churned','No Orders'],data:[4663,1318,1987,32]}
+const DATA = {"kpis":{"total_rev":50223034.95,"valid_orders":94951,"completed":87825,"cancelled":5049,"refunded":7126,"total_units":220365,"aov":528.94,"margin":33.87,"profit":17008805.86,"shipping":1940695.66,"distinct_cust":7968,"refunded_usd":3714216.25,"return_rate":7.5,"total_spend":3813593.08,"reported_rev":52871960.04,"roas_actual":13.17,"ref_date":"2024-12-31","inv_healthy":440,"inv_below":60,"inv_stockout":0,"inv_no_inv":0,"avg_stock":17.6,"avg_lead":16.1,"customers":8000,"premium":1749,"active":4663,"at_risk":1318,"churned":1987,"no_orders":32,"rows_transactions":100000,"rows_returns":7126,"rows_products":500,"top_country":"USA","ph_promo":2618,"ph_rows":18000,"ph_elastic_avg":-1.63,"avg_price_index":1.04,"discount_orders":54420},"monthly":[{"ym":"2023-05","completed":2372,"cancelled":140,"refunded":187,"units":5904,"rev":1328601.43,"profit":455046.2,"shipping":53162.6,"customers":1760,"aov":519.19},{"ym":"2022-08","completed":2287,"cancelled":111,"refunded":212,"units":5762,"rev":1302418.7,"profit":446130.98,"shipping":50354.11,"customers":1770,"aov":521.18},{"ym":"2023-08","completed":2282,"cancelled":121,"refunded":189,"units":5781,"rev":1315048.66,"profit":452889.03,"shipping":50193.04,"customers":1681,"aov":532.19},{"ym":"2024-05","completed":2391,"cancelled":132,"refunded":173,"units":6063,"rev":1349102.84,"profit":462841.87,"shipping":54216.17,"customers":1775,"aov":526.17},{"ym":"2023-04","completed":2106,"cancelled":146,"refunded":175,"units":5360,"rev":1152016.9,"profit":393669.06,"shipping":46733.15,"customers":1617,"aov":505.05},{"ym":"2023-02","completed":1491,"cancelled":80,"refunded":126,"units":3807,"rev":891506.13,"profit":295668.8,"shipping":32932.82,"customers":1235,"aov":551.33},{"ym":"2022-07","completed":2560,"cancelled":146,"refunded":189,"units":6446,"rev":1476462.23,"profit":497952.15,"shipping":56519.68,"customers":1899,"aov":537.09},{"ym":"2023-11","completed":3310,"cancelled":190,"refunded":268,"units":8340,"rev":1892850.08,"profit":626938.47,"shipping":71043.55,"customers":2297,"aov":529.02},{"ym":"2024-07","completed":2408,"cancelled":146,"refunded":192,"units":6027,"rev":1349702.89,"profit":455613.39,"shipping":54483.97,"customers":1803,"aov":519.12},{"ym":"2023-10","completed":2709,"cancelled":141,"refunded":200,"units":6601,"rev":1558629.91,"profit":514737.43,"shipping":56819.58,"customers":1953,"aov":535.8},{"ym":"2023-12","completed":3984,"cancelled":239,"refunded":344,"units":10092,"rev":2298695.93,"profit":780228.92,"shipping":88281.88,"customers":2612,"aov":531.12},{"ym":"2022-02","completed":1403,"cancelled":67,"refunded":105,"units":3427,"rev":819751.48,"profit":281213.53,"shipping":29677.65,"customers":1135,"aov":543.6},{"ym":"2024-08","completed":2345,"cancelled":126,"refunded":202,"units":5922,"rev":1358681.6,"profit":462764.28,"shipping":52044.64,"customers":1753,"aov":533.44},{"ym":"2024-11","completed":3381,"cancelled":197,"refunded":268,"units":8482,"rev":1933447.57,"profit":660437.43,"shipping":76620.33,"customers":2335,"aov":529.86},{"ym":"2024-09","completed":2413,"cancelled":152,"refunded":168,"units":6238,"rev":1400315.66,"profit":482996.89,"shipping":54497.17,"customers":1766,"aov":542.55},{"ym":"2022-04","completed":2261,"cancelled":123,"refunded":194,"units":5540,"rev":1375112.32,"profit":449223.81,"shipping":49815.53,"customers":1732,"aov":560.13},{"ym":"2022-10","completed":2616,"cancelled":182,"refunded":207,"units":6465,"rev":1487823.32,"profit":503030.89,"shipping":56567.76,"customers":1898,"aov":527.04},{"ym":"2022-12","completed":3976,"cancelled":221,"refunded":350,"units":9800,"rev":2193555.24,"profit":753188.67,"shipping":83656.9,"customers":2627,"aov":507.06},{"ym":"2023-07","completed":2425,"cancelled":127,"refunded":182,"units":6107,"rev":1422002.08,"profit":472705.71,"shipping":54128.08,"customers":1793,"aov":545.46},{"ym":"2023-01","completed":1879,"cancelled":113,"refunded":134,"units":4672,"rev":1049933.29,"profit":358574.22,"shipping":42747.01,"customers":1509,"aov":521.58},{"ym":"2022-01","completed":1839,"cancelled":104,"refunded":145,"units":4570,"rev":999827.79,"profit":340971.41,"shipping":40584.47,"customers":1455,"aov":503.95},{"ym":"2022-06","completed":2159,"cancelled":110,"refunded":171,"units":5387,"rev":1275245.15,"profit":430117.98,"shipping":49475.22,"customers":1673,"aov":547.32},{"ym":"2024-03","completed":2188,"cancelled":127,"refunded":188,"units":5495,"rev":1252805.08,"profit":429966.17,"shipping":47684.14,"customers":1673,"aov":527.27},{"ym":"2024-10","completed":2590,"cancelled":161,"refunded":209,"units":6492,"rev":1493350.73,"profit":508430.76,"shipping":55777.57,"customers":1926,"aov":533.53},{"ym":"2023-09","completed":2372,"cancelled":145,"refunded":216,"units":6147,"rev":1385403.38,"profit":474954.71,"shipping":52668.82,"customers":1791,"aov":535.32},{"ym":"2022-05","completed":2327,"cancelled":145,"refunded":206,"units":5824,"rev":1299087.16,"profit":447398.64,"shipping":53058.94,"customers":1749,"aov":512.87},{"ym":"2024-04","completed":2172,"cancelled":149,"refunded":195,"units":5627,"rev":1279437.99,"profit":427731.21,"shipping":50775.77,"customers":1644,"aov":540.53},{"ym":"2022-11","completed":3292,"cancelled":174,"refunded":244,"units":8295,"rev":1963329.98,"profit":651986.32,"shipping":73462.64,"customers":2264,"aov":555.24},{"ym":"2023-03","completed":2014,"cancelled":119,"refunded":159,"units":5054,"rev":1120260.68,"profit":379177.14,"shipping":45531.15,"customers":1580,"aov":515.54},{"ym":"2024-12","completed":3903,"cancelled":233,"refunded":338,"units":9831,"rev":2110609.63,"profit":726136.08,"shipping":87687.07,"customers":2618,"aov":497.67},{"ym":"2022-09","completed":2354,"cancelled":130,"refunded":205,"units":6008,"rev":1358664.53,"profit":459138.58,"shipping":52819.24,"customers":1741,"aov":530.94},{"ym":"2024-01","completed":1806,"cancelled":100,"refunded":132,"units":4529,"rev":1010217.95,"profit":341635.5,"shipping":38987.69,"customers":1431,"aov":521.27},{"ym":"2023-06","completed":2272,"cancelled":125,"refunded":183,"units":5579,"rev":1281274.91,"profit":428891.85,"shipping":48184.56,"customers":1691,"aov":521.9},{"ym":"2024-02","completed":1513,"cancelled":70,"refunded":132,"units":3817,"rev":928706.45,"profit":311872.65,"shipping":34706.83,"customers":1259,"aov":564.56},{"ym":"2024-06","completed":2251,"cancelled":129,"refunded":174,"units":5491,"rev":1280199.81,"profit":427442.84,"shipping":48883.99,"customers":1714,"aov":527.92},{"ym":"2022-03","completed":2174,"cancelled":128,"refunded":164,"units":5383,"rev":1228955.47,"profit":417102.29,"shipping":45911.94,"customers":1665,"aov":525.64}],"categories":{"labels":["Electronics","Clothing","Sports & Outdoors","Home & Kitchen","Beauty & Health","Toys & Games","Books"],"data":[23169655.16,8400512.96,7332092.33,6780299.51,2533756.7,1341943.09,664775.2],"share":[46.1,16.7,14.6,13.5,5.0,2.7,1.3],"margin":[20.6,52.4,41.7,36.5,57.6,47.1,31.3],"orders":[15705,24345,12469,16099,9770,7754,8809]},"channels":{"labels":["organic_search","paid_search","social_media","email","direct","referral"],"data":[13958057.71,11184231.01,9047670.36,7414255.31,5015650.23,3603170.33],"share":[27.8,22.3,18.0,14.8,10.0,7.2],"orders":[26517,20935,17066,14279,9394,6760]},"marketing_last":{"month":"2024-12","rows":[{"mm":"2024-12","channel":"organic_search","spend":9677.47,"reported":618181.4,"actual":588757.72,"var_pct":-4.76,"roas":63.878,"ctr":0.0223,"cac":9.6},{"mm":"2024-12","channel":"paid_search","spend":87469.67,"reported":472126.62,"actual":453742.0,"var_pct":-3.89,"roas":5.398,"ctr":0.0165,"cac":108.39},{"mm":"2024-12","channel":"social_media","spend":62400.99,"reported":398849.69,"actual":380868.62,"var_pct":-4.51,"roas":6.392,"ctr":0.0171,"cac":97.2},{"mm":"2024-12","channel":"email","spend":5177.58,"reported":319395.52,"actual":300877.5,"var_pct":-5.8,"roas":61.688,"ctr":0.0328,"cac":9.33},{"mm":"2024-12","channel":"direct","spend":1776.29,"reported":230124.38,"actual":213615.05,"var_pct":-7.17,"roas":129.553,"ctr":0.0364,"cac":4.49},{"mm":"2024-12","channel":"referral","spend":15575.86,"reported":182939.59,"actual":172748.74,"var_pct":-5.57,"roas":11.745,"ctr":0.0362,"cac":50.08}]},"marketing_channels":[{"channel":"organic_search","spend":212114.74,"reported":14777944.35,"actual":13958057.71,"var_pct":-5.55},{"channel":"paid_search","spend":1864773.43,"reported":11700542.54,"actual":11184231.01,"var_pct":-4.41},{"channel":"social_media","spend":1240094.42,"reported":9492980.16,"actual":9047670.36,"var_pct":-4.69},{"channel":"email","spend":124897.93,"reported":7774821.35,"actual":7414255.31,"var_pct":-4.64},{"channel":"direct","spend":40883.75,"reported":5326341.4,"actual":5015650.23,"var_pct":-5.83},{"channel":"referral","spend":330828.81,"reported":3799330.24,"actual":3603170.33,"var_pct":-5.16}],"customer":{"labels":["Active","At Risk","Churned","No Orders"],"data":[4663,1318,1987,32]},"inventory":{"healthy":440,"below":60,"stockout":0,"no_inv":0},"top_products":[{"id":"PROD0276","name":"ClearView Electronics Item 276","category":"Electronics","rev":1896724.68,"profit":386066.44,"margin":20.4,"units":2548,"avg_price":744.4,"returns":76,"ret_rate":2.98,"stock":132,"reorder":37,"status":"OK"},{"id":"PROD0055","name":"ZenLife Clothing Item 55","category":"Clothing","rev":1170646.77,"profit":613595.73,"margin":52.4,"units":6552,"avg_price":178.67,"returns":217,"ret_rate":3.31,"stock":468,"reorder":95,"status":"OK"},{"id":"PROD0468","name":"FunZone Electronics Item 468","category":"Electronics","rev":884396.44,"profit":181233.98,"margin":20.5,"units":806,"avg_price":1097.27,"returns":23,"ret_rate":2.85,"stock":23,"reorder":11,"status":"OK"},{"id":"PROD0216","name":"CoreBrand Electronics Item 216","category":"Electronics","rev":881478.47,"profit":179038.13,"margin":20.3,"units":786,"avg_price":1121.47,"returns":31,"ret_rate":3.94,"stock":7,"reorder":11,"status":"Below Reorder"},{"id":"PROD0115","name":"GlowUp Electronics Item 115","category":"Electronics","rev":774871.21,"profit":163461.11,"margin":21.1,"units":1190,"avg_price":651.15,"returns":39,"ret_rate":3.28,"stock":69,"reorder":17,"status":"OK"},{"id":"PROD0318","name":"StyleCo Electronics Item 318","category":"Electronics","rev":541667.15,"profit":113991.15,"margin":21.0,"units":496,"avg_price":1092.07,"returns":10,"ret_rate":2.02,"stock":20,"reorder":7,"status":"OK"},{"id":"PROD0012","name":"GlowUp Electronics Item 12","category":"Electronics","rev":511215.44,"profit":108341.76,"margin":21.2,"units":737,"avg_price":693.64,"returns":27,"ret_rate":3.66,"stock":33,"reorder":10,"status":"OK"},{"id":"PROD0174","name":"ActiveGear Electronics Item 174","category":"Electronics","rev":498312.59,"profit":100631.49,"margin":20.2,"units":470,"avg_price":1060.24,"returns":14,"ret_rate":2.98,"stock":15,"reorder":6,"status":"OK"},{"id":"PROD0229","name":"HomePro Electronics Item 229","category":"Electronics","rev":492675.26,"profit":100611.94,"margin":20.4,"units":451,"avg_price":1092.41,"returns":14,"ret_rate":3.1,"stock":13,"reorder":6,"status":"OK"},{"id":"PROD0467","name":"FunZone Home Item 467","category":"Home & Kitchen","rev":483768.71,"profit":175928.39,"margin":36.4,"units":1602,"avg_price":301.98,"returns":46,"ret_rate":2.87,"stock":21,"reorder":23,"status":"Below Reorder"},{"id":"PROD0089","name":"PrimeLine Electronics Item 89","category":"Electronics","rev":481558.47,"profit":101560.39,"margin":21.1,"units":448,"avg_price":1074.91,"returns":14,"ret_rate":3.12,"stock":13,"reorder":6,"status":"OK"},{"id":"PROD0114","name":"PrimeLine Electronics Item 114","category":"Electronics","rev":459004.55,"profit":91761.19,"margin":20.0,"units":508,"avg_price":903.55,"returns":16,"ret_rate":3.15,"stock":12,"reorder":7,"status":"OK"}],"supplier_stats":{"rows":998,"per_product":2.0,"primaries":500,"avg_lead":14.5,"avg_reliability":0.87,"distinct_suppliers":21},"status_breakdown":{"completed":87825,"cancelled":5049,"refunded":7126},"payment_methods":{"credit_card":39782,"paypal":23735,"debit_card":17060,"apple_pay":9668,"bank_transfer":4706},"top_countries":[{"country":"USA","n":2451},{"country":"UK","n":1214},{"country":"Germany","n":945},{"country":"France","n":828},{"country":"Canada","n":605},{"country":"Italy","n":543},{"country":"Spain","n":478},{"country":"Netherlands","n":367}]};
+</script>
+<script>
+const $ = (sel)=>document.querySelector(sel);
+const fmtMoney=(v)=>"$"+Number(v).toLocaleString('en-US',{maximumFractionDigits:0});
+const fmtMoney2=(v)=>"$"+Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const pct=(v)=>Number(v).toFixed(1)+"%";
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+/* ---------- scroll progress + scroll-spy ---------- */
+const progress=$('#progress');
+window.addEventListener('scroll',()=>{
+  const h=document.documentElement;
+  const p=(h.scrollTop)/(h.scrollHeight-h.clientHeight);
+  progress.style.width=(p*100)+'%';
+  const links=[...document.querySelectorAll('#navLinks a')];
+  let current='';
+  for(const sec of document.querySelectorAll('section[id]')){
+    const r=sec.getBoundingClientRect();
+    if(r.top<=140 && r.bottom>140) current=sec.id;
+  }
+  links.forEach(a=>a.classList.toggle('active',a.getAttribute('href')==='#'+current));
+},{passive:true});
+
+/* ---------- KPIs ---------- */
+const ICONS={
+  rev:'<path d="M3 22V8M8 22V3M13 22v-9M18 22V5M23 22H1"/><path d="M16 7h4l-4-4-4 4zM9 16h4l-4-4-4 4z"/>',
+  profit:'<path d="M18 6 6 18M8 6h10v10"/><path d="m6 18 12-12"/>',
+  order:'<path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/>',
+  ret:'<path d="M3 12a9 9 0 1 1 3 6.7"/><path d="M3 12V6m0 6h6"/>',
+  target:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4"/><path d="M12 3v3m0 12v3M3 12h3m12 0h3"/>',
+  users:'<circle cx="9" cy="8" r="3.4"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 5.5a3.2 3.2 0 0 1 0 6M17.6 20a5.5 5.5 0 0 0-3.1-5"/>',
+  box:'<path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/><path d="M7.5 5.6 16.5 10.4"/>',
+  pulse:'<path d="M4 12h3l2-5 4 10 2-5h5"/>',
+  cancel:'<path d="M12 22a10 10 0 1 1 10-10"/><path d="M22 2v6h-6"/><path d="M15.5 8.5l6 6m0-6-6 6"/>'
 };
-function filterTable(id,q){
+function kpiCard(tone,icon,lbl,val,det,cls){
+  const d=document.createElement('div'); d.className='kpi';
+  d.style.setProperty('--kpi-tone',tone.grad);
+  d.style.setProperty('--kpi-icon',tone.color);
+  d.innerHTML=`<div class="top"><div class="lbl">${esc(lbl)}</div><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${ICONS[icon]}</svg></span></div>
+  <div class="val ${cls||''}">${val}</div><div class="det">${det}</div>`;
+  return d;
+}
+const TONES={
+  blue:{grad:'linear-gradient(90deg,#4cc2ff,#8b9cf6)',color:'#4cc2ff'},
+  green:{grad:'linear-gradient(90deg,#3fd8a0,#2dd4bf)',color:'#3fd8a0'},
+  amber:{grad:'linear-gradient(90deg,#fdc35a,#f59e0b)',color:'#fdc35a'},
+  rose:{grad:'linear-gradient(90deg,#fb7185,#f87171)',color:'#fb7185'},
+  violet:{grad:'linear-gradient(90deg,#a78bfa,#8b9cf6)',color:'#a78bfa'},
+  teal:{grad:'linear-gradient(90deg,#2dd4bf,#4cc2ff)',color:'#2dd4bf'},
+  indigo:{grad:'linear-gradient(90deg,#8b9cf6,#a78bfa)',color:'#8b9cf6'},
+  bronze:{grad:'linear-gradient(90deg,#dd9a5f,#cd7f32)',color:'#dd9a5f'}
+};
+(function(){
+  const K=DATA.kpis,g=$('#kpiGrid');
+  const mktNote=K.total_spend?`reported ${(K.reported_rev/K.total_spend).toFixed(1)}x &middot; ledger 13.2x`:'';
+  const cards=[
+    kpiCard(TONES.blue,'rev','Total revenue (valid)',fmtMoney(K.total_rev),`${K.valid_orders.toLocaleString()} valid orders &middot; <b>${K.completed.toLocaleString()} completed</b> + ${K.refunded.toLocaleString()} refunded`),
+    kpiCard(TONES.green,'profit','Gross profit &amp; margin',`${fmtMoney2(K.profit)} / ${pct(K.margin)}`,`gross margin ${pct(K.margin)} &middot; shipping ${fmtMoney2(K.shipping)}`),
+    kpiCard(TONES.teal,'order','Average order value',fmtMoney2(K.aov),`${K.total_units.toLocaleString()} units sold &middot; <b>${K.distinct_cust.toLocaleString()}</b> distinct buyers`),
+    kpiCard(TONES.rose,'ret','Return rate',pct(K.return_rate),`${K.refunded.toLocaleString()} returns &middot; refunded ${fmtMoney(K.refunded_usd)}`),
+    kpiCard(TONES.amber,'target','Marketing ROAS (actual)',K.roas_actual+'x',`spend ${fmtMoney(K.total_spend)} ${mktNote}`, 'warn'),
+    kpiCard(TONES.violet,'users','Customers',K.customers.toLocaleString(),`<b>${K.premium.toLocaleString()}</b> premium &middot; top country ${esc(K.top_country)}`),
+    kpiCard(TONES.bronze,'box','Inventory health',`${K.inv_healthy} healthy`, `${K.inv_below} below reorder &middot; ${K.inv_stockout} stockouts &middot; avg stock ${K.avg_stock} &middot; lead ${K.avg_lead}d`),
+    kpiCard(TONES.indigo,'pulse','Customer status',`${K.active} active`, `at risk <b>${K.at_risk}</b> &middot; churned ${K.churned} &middot; no orders ${K.no_orders}`),
+  ];
+  cards.forEach(c=>g.appendChild(c));
+})();
+
+/* ---------- Charts ---------- */
+Chart.defaults.color='#9daec4';
+Chart.defaults.borderColor='rgba(30,42,62,.55)';
+Chart.defaults.font.family="'Inter',system-ui,sans-serif";
+Chart.defaults.plugins.tooltip.backgroundColor='rgba(10,13,20,.94)';
+Chart.defaults.plugins.tooltip.borderColor='#2a3a54';
+Chart.defaults.plugins.tooltip.borderWidth=1;
+Chart.defaults.plugins.tooltip.titleColor='#eef3fa';
+Chart.defaults.plugins.tooltip.bodyColor='#d4deeb';
+Chart.defaults.plugins.tooltip.padding=10;
+Chart.defaults.plugins.tooltip.cornerRadius=10;
+let revChart;
+Chart.register({id:'nox',$beforeInit(c){c.options.scales.x.grid.display=false;}});
+function renderRev(n){
+  const all=DATA.monthly.slice().sort((a,b)=>a.ym.localeCompare(b.ym));
+  const m=all.slice(-n);
+  const labels=m.map(x=>x.ym), rev=m.map(x=>x.rev), profit=m.map(x=>x.profit);
+  if(revChart) revChart.destroy();
+  revChart=new Chart($('#revChart'),{type:'line',
+    data:{labels,datasets:[
+      {label:'Revenue',data:rev,borderColor:'#4cc2ff',backgroundColor:'rgba(76,194,255,.12)',tension:.3,fill:true,pointRadius:2,pointHoverRadius:5,borderWidth:2},
+      {label:'Profit',data:profit,borderColor:'#3fd8a0',backgroundColor:'rgba(63,216,160,.08)',tension:.3,fill:true,pointRadius:2,pointHoverRadius:5,borderWidth:2}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{boxWidth:12,boxHeight:12,usePointStyle:true,font:{size:11}}},
+        tooltip:{callbacks:{label:(ctx)=>` ${ctx.dataset.label}: ${fmtMoney2(ctx.parsed.y)}`}}},
+      scales:{
+        x:{ticks:{maxRotation:60,minRotation:0,font:{size:10.5}}},
+        y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{callback:v=>'$'+(v/1000000).toFixed(1)+'M',font:{size:10.5}}}
+      }}});
+}
+renderRev(12);
+$('#rangeSel').addEventListener('change',e=>renderRev(parseInt(e.target.value)));
+
+function newPie(id,labels,data,colors,tot){
+  new Chart($(id),{type:'doughnut',
+    data:{labels,datasets:[{data,backgroundColor:colors,borderWidth:2,borderColor:'#111826',hoverOffset:8}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'58%',
+      plugins:{legend:{position:'bottom',labels:{boxWidth:10,boxHeight:10,font:{size:10.5},padding:10,usePointStyle:true}},
+        tooltip:{callbacks:{label:(ctx)=>{
+          const v=ctx.parsed; const s=tot?`${(100*v/tot).toFixed(1)}%`:'';
+          return ` ${ctx.label}: ${fmtMoney(v)} ${s}`;
+        }}}}}});
+}
+const CAT_COLORS=['#4cc2ff','#8b9cf6','#3fd8a0','#fdc35a','#fb7185','#a78bfa','#92a5bf'];
+const CH_COLORS=['#4cc2ff','#8b9cf6','#3fd8a0','#fdc35a','#fb7185','#a78bfa'];
+newPie('#catChart',DATA.categories.labels,DATA.categories.data,CAT_COLORS,DATA.kpis.total_rev);
+
+new Chart($('#chChart'),{type:'bar',
+  data:{labels:DATA.channels.labels,datasets:[
+    {label:'Revenue',data:DATA.channels.data,backgroundColor:'rgba(76,194,255,.85)',hoverBackgroundColor:'#4cc2ff',borderRadius:7,maxBarThickness:34}
+  ]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+    scales:{y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{callback:v=>'$'+(v/1000000).toFixed(1)+'M',font:{size:10.5}}},
+      x:{ticks:{font:{size:10.5}}}}}});
+
+newPie('#custChart',DATA.customer.labels,DATA.customer.data,['#3fd8a0','#fdc35a','#fb7185','#64748b'],DATA.kpis.customers);
+
+new Chart($('#mktChart'),{type:'bar',
+  data:{labels:DATA.marketing_last.rows.map(r=>r.channel),datasets:[
+    {label:'Reported',data:DATA.marketing_last.rows.map(r=>r.reported),backgroundColor:'rgba(76,194,255,.85)',hoverBackgroundColor:'#4cc2ff',borderRadius:6,maxBarThickness:26},
+    {label:'Actual (ledger)',data:DATA.marketing_last.rows.map(r=>r.actual),backgroundColor:'rgba(63,216,160,.9)',hoverBackgroundColor:'#3fd8a0',borderRadius:6,maxBarThickness:26}
+  ]},
+  options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{labels:{boxWidth:12,boxHeight:12,usePointStyle:true,font:{size:11}}},
+      tooltip:{callbacks:{label:(ctx)=>` ${ctx.dataset.label}: ${fmtMoney2(ctx.parsed.y)}`}}},
+    scales:{y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{callback:v=>'$'+(v/1000).toFixed(0)+'k',font:{size:10.5}}},
+      x:{ticks:{font:{size:10.5}}}}}});
+
+new Chart($('#invChart'),{type:'bar',
+  data:{labels:['Healthy','Below Reorder','Stockout'],datasets:[
+    {label:'SKUs',data:[DATA.inventory.healthy,DATA.inventory.below,DATA.inventory.stockout],backgroundColor:['rgba(63,216,160,.85)','rgba(253,195,90,.85)','rgba(251,113,133,.85)'],borderRadius:7,maxBarThickness:30}]},
+  options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false},
+    tooltip:{callbacks:{label:(ctx)=>` ${ctx.parsed.x} SKUs`}}},
+    scales:{x:{grid:{color:'rgba(255,255,255,.05)'},ticks:{font:{size:10.5}}},y:{ticks:{font:{size:11}}}}}});
+
+/* ---------- Gold tables ---------- */
+function searchInput(id){ return `<input class="search" placeholder="Filter rows..." oninput="filterRows('${id}',this.value)">`; }
+function filterRows(tblId,q){
   q=(q||'').toLowerCase();
-  document.querySelectorAll('#'+id+' tbody tr').forEach(tr=>{
-    tr.style.display=tr.textContent.toLowerCase().includes(q)?'':'none';
+  document.querySelectorAll('#'+tblId+' tbody tr').forEach(tr=>{
+    tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
   });
 }
+function statusPill(s){
+  if(/Act|OK|Healthy|completed/i.test(s)) return `<span class="pill act">${esc(s)}</span>`;
+  if(/Risk|reorder|at risk/i.test(s)) return `<span class="pill risk">${esc(s)}</span>`;
+  if(/Churn|Stockout|cancel/i.test(s)) return `<span class="pill bad">${esc(s)}</span>`;
+  return `<span class="pill ok">${esc(s)}</span>`;
+}
+
+function renderCust(){
+  const K=DATA.kpis,tot=K.customers,D=DATA.customer;
+  const rows=D.labels.map((l,i)=>{
+    const share=(100*D.data[i]/tot).toFixed(1);
+    return `<tr><td class="mono">${esc(l)}</td><td class="num"><b>${D.data[i].toLocaleString()}</b></td><td class="num">${share}%</td><td>${statusPill(l)}</td></tr>`;
+  }).join('');
+  $('#tblCust').innerHTML=`<div class="tb-head">
+    <div><span class="tb-title">gold_customer_360</span> <span class="tb-note">8,000 customers &middot; status = f(last order vs @ref_date 2024-12-31)</span></div>
+    ${searchInput('tblCust')}</div>
+  <table><thead><tr><th>Status</th><th>Customers</th><th>Share</th><th>Flag</th></tr></thead><tbody>${rows}</tbody></table>
+  <div class="tbl-foot">Grain: 1 row / customer &middot; Active &le; 90d &middot; At Risk &le; 180d &middot; else Churned &middot; 0 orders = No Orders</div>`;
+}
+function renderProd(){
+  const rows=DATA.top_products.map(p=>`
+    <tr>
+      <td class="mono">${esc(p.id)}<br><span class="mut">${esc(p.name)}</span></td>
+      <td>${esc(p.category)}</td>
+      <td class="num">${fmtMoney(p.rev)}<br><span class="mut">${p.margin}% margin</span></td>
+      <td class="num">${p.units.toLocaleString()}<br><span class="mut">${fmtMoney2(p.avg_price)} avg</span></td>
+      <td class="num">${p.returns}<br><span class="mut">${p.ret_rate}% rate</span></td>
+      <td class="num">${p.stock!=null?p.stock:'&mdash;'} / ${p.reorder!=null?p.reorder:'&mdash;'}</td>
+      <td>${statusPill(p.status)}</td>
+    </tr>`).join('');
+  $('#tblProd').innerHTML=`<div class="tb-head">
+    <div><span class="tb-title">gold_product_performance</span> <span class="tb-note">top 12 by revenue &middot; 500 SKUs</span></div>
+    ${searchInput('tblProd')}</div>
+  <table><thead><tr><th>Product</th><th>Category</th><th>Revenue / Margin</th><th>Units / Avg price</th><th>Returns</th><th>Stock / Reorder</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>
+  <div class="tbl-foot">Inventory: healthy ${DATA.inventory.healthy} &middot; below reorder ${DATA.inventory.below} &middot; stockout ${DATA.inventory.stockout} &middot; no inventory ${DATA.inventory.no_inv}</div>`;
+}
+function renderMnth(){
+  const rows=DATA.monthly.slice().sort((a,b)=>a.ym.localeCompare(b.ym)).map(m=>
+    `<tr><td class="mono">${m.ym}</td>
+      <td class="num">${m.completed.toLocaleString()}</td><td class="num">${m.cancelled.toLocaleString()}</td>
+      <td class="num">${m.refunded.toLocaleString()}</td><td class="num">${m.units.toLocaleString()}</td>
+      <td class="num">${fmtMoney2(m.rev)}</td><td class="num">${fmtMoney2(m.profit)}</td>
+      <td class="num">${fmtMoney2(m.aov)}</td><td class="num">${m.customers.toLocaleString()}</td></tr>`).join('');
+  $('#tblMnth').innerHTML=`<div class="tb-head">
+    <div><span class="tb-title">gold_sales_monthly_summary</span> <span class="tb-note">36 months &middot; AOV = revenue / completed orders</span></div>
+    ${searchInput('tblMnth')}</div>
+  <table><thead><tr><th>Year-Month</th><th>Completed</th><th>Cancelled</th><th>Refunded</th><th>Units</th><th>Revenue</th><th>Profit</th><th>AOV</th><th>Customers</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+function renderMktr(){
+  const rows=DATA.marketing_channels.map(r=>
+    `<tr><td class="mono">${esc(r.channel)}</td>
+      <td class="num">${fmtMoney2(r.spend)}</td><td class="num">${fmtMoney2(r.reported)}</td>
+      <td class="num">${fmtMoney2(r.actual)}</td>
+      <td class="num" style="color:${r.var_pct<0?'#fb7185':'#3fd8a0'};font-weight:700">${r.var_pct>0?'+':''}${pct(r.var_pct)}</td></tr>`).join('');
+  $('#tblMktr').innerHTML=`<div class="tb-head">
+    <div><span class="tb-title">gold_marketing_performance</span> <span class="tb-note">36 months &middot; per channel &middot; reported vs actual ledger</span></div>
+    ${searchInput('tblMktr')}</div>
+  <table><thead><tr><th>Channel</th><th>Spend</th><th>Reported Rev</th><th>Actual Rev</th><th>Variance</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+function renderInv(){
+  const K=DATA.kpis,tot=500;
+  const rows=[['Healthy',K.inv_healthy,'act'],['Below Reorder Point',K.inv_below,'risk'],['Stockout',K.inv_stockout,'bad'],['No Inventory Data',K.inv_no_inv,'ok']].map(r=>
+    `<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td class="num">${(100*r[1]/tot).toFixed(1)}%</td><td>${statusPill(r[0])}</td></tr>`).join('');
+  $('#tblInv').innerHTML=`<div class="tb-head">
+    <div><span class="tb-title">gold_inventory_status</span> <span class="tb-note">500 SKUs &middot; avg stock ${K.avg_stock} &middot; avg lead ${K.avg_lead}d</span></div>
+    ${searchInput('tblInv')}</div>
+  <table><thead><tr><th>Status</th><th>SKUs</th><th>Share</th><th>Flag</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+renderCust(); renderProd(); renderMnth(); renderMktr(); renderInv();
+
+/* tabs */
 document.querySelectorAll('.tab').forEach(btn=>{
   btn.addEventListener('click',()=>{
     document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
-    const tab=btn.dataset.tab;
-    document.querySelectorAll('[data-panel]').forEach(p=>p.style.display=p.dataset.panel===tab?'':'none');
+    const map={cust:'tblCust',prod:'tblProd',mnth:'tblMnth',mktr:'tblMktr',inv:'tblInv'};
+    Object.keys(map).forEach(k=>{
+      document.getElementById(map[k]).style.display = (k===btn.dataset.tbl) ? '' : 'none';
+    });
   });
 });
-// Charts with real data
-let revChart, catChart;
-function renderRev(range){
-  const months=REAL_DATA.monthly.slice(-range);
-  const labels=months.map(m=>m.ym);
-  const rev=months.map(m=>m.rev);
-  const profit=months.map(m=>m.profit);
-  if(revChart) revChart.destroy();
-  revChart=new Chart(document.getElementById('revChart'),{
-    type:'line',
-    data:{labels,datasets:[
-      {label:'Revenue',data:rev,borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,.14)',tension:.32,fill:true,pointRadius:2},
-      {label:'Profit',data:profit,borderColor:'#10b981',backgroundColor:'rgba(16,185,129,.10)',tension:.32,fill:true,pointRadius:2}
-    ]},
-    options:{responsive:true,plugins:{legend:{labels:{color:'#8b9bb4',font:{size:11}}}},scales:{x:{ticks:{color:'#8b9bb4',maxRotation:60},grid:{color:'rgba(35,47,69,.45)'}},y:{ticks:{color:'#8b9bb4',callback:v=>'$'+(v/1000000).toFixed(1)+'M'},grid:{color:'rgba(35,47,69,.45)'}}}}
-  });
-}
-renderRev(12);
-document.getElementById('rangeFilter').addEventListener('change',e=>renderRev(parseInt(e.target.value)));
 
-catChart=new Chart(document.getElementById('catChart'),{
-  type:'doughnut',
-  data:{labels:REAL_DATA.categories.labels,datasets:[{data:REAL_DATA.categories.data,backgroundColor:['#3b82f6','#06b6d4','#8b5cf6','#f59e0b','#10b981','#ef4444','#94a3b8'],borderWidth:0}]},
-  options:{responsive:true,plugins:{legend:{position:'bottom',labels:{color:'#8b9bb4',font:{size:10},padding:10}},tooltip:{callbacks:{label:ctx=>ctx.label+': $'+(ctx.parsed/1000000).toFixed(2)+'M ('+(ctx.parsed/50223034.95*100).toFixed(1)+'%)'}}},cutout:'58%'}
-});
-new Chart(document.getElementById('mktChart'),{
-  type:'bar',
-  data:{labels:REAL_DATA.marketing_2024_12.labels,datasets:[
-    {label:'Spend',data:REAL_DATA.marketing_2024_12.spend,backgroundColor:'rgba(239,68,68,.82)',borderRadius:6},
-    {label:'Reported Revenue',data:REAL_DATA.marketing_2024_12.reported,backgroundColor:'rgba(59,130,246,.82)',borderRadius:6},
-    {label:'Actual Sales Revenue',data:REAL_DATA.marketing_2024_12.actual,backgroundColor:'rgba(16,185,129,.82)',borderRadius:6}
-  ]},
-  options:{responsive:true,plugins:{legend:{labels:{color:'#8b9bb4',font:{size:10}}}},scales:{x:{ticks:{color:'#8b9bb4'},grid:{display:false}},y:{ticks:{color:'#8b9bb4',callback:v=>'$'+(v/1000)+'k'},grid:{color:'rgba(35,47,69,.45)'}}}}
-});
-new Chart(document.getElementById('invChart'),{
-  type:'bar',
-  data:{labels:['Healthy','Below Reorder','Stockout'],datasets:[{label:'SKUs',data:[REAL_DATA.inventory.healthy,REAL_DATA.inventory.below,REAL_DATA.inventory.stockout],backgroundColor:['#10b981','#f59e0b','#ef4444'],borderRadius:6}]},
-  options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#8b9bb4'},grid:{color:'rgba(35,47,69,.45)'}},y:{ticks:{color:'#8b9bb4'},grid:{display:false}}}}
-});
-new Chart(document.getElementById('custChart'),{
-  type:'doughnut',
-  data:{labels:REAL_DATA.customer.labels,datasets:[{data:REAL_DATA.customer.data,backgroundColor:['#10b981','#f59e0b','#ef4444','#475569'],borderWidth:0}]},
-  options:{responsive:true,plugins:{legend:{position:'bottom',labels:{color:'#8b9bb4',font:{size:11}}}},cutout:'54%'}
-});
+/* ---------- dictionary ---------- */
+(function(){
+  const dict=[
+    {name:'customers.csv',rows:'8,000',desc:'One row per customer â€” profile, loyalty, geography.',cols:['customer_id PK','country','currency','age','gender','is_premium','email_verified']},
+    {name:'products.csv',rows:'500',desc:'One row per product â€” catalog, costs, launch.',cols:['product_id PK','category','brand','unit_price_usd','unit_cost_usd','weight_kg','launch_date']},
+    {name:'inventory.csv',rows:'500',desc:'One row per product â€” stock snapshot.',cols:['product_id FK','stock_units','reorder_point','warehouse_location','last_restock_date','supplier_lead_days']},
+    {name:'supplier_costs.csv',rows:'998',desc:'One row per product+supplier â€” sourcing cost config.',cols:['product_id FK','supplier_name','unit_cost_usd','lead_time_days','is_primary','reliability_score']},
+    {name:'marketing_spend.csv',rows:'216',desc:'One row per month+channel â€” reported marketing KPIs.',cols:['year_month','channel','spend_usd','impressions','clicks','ctr','roas','cac_usd']},
+    {name:'price_history.csv',rows:'18,000',desc:'One row per product+month â€” pricing and elasticity.',cols:['product_id FK','year_month','listed_price_usd','competitor_price_usd','price_elasticity','is_promotional']},
+    {name:'transactions.csv',rows:'100,000',desc:'FACT table â€” every sales line item.',cols:['transaction_id PK','customer_id FK','product_id FK','quantity','revenue_usd','profit_usd','channel','status']},
+    {name:'returns.csv',rows:'7,126',desc:'One row per return â€” reason and refund.',cols:['return_id PK','transaction_id FK','reason','refund_amount_usd','restocked']},
+  ];
+  const g=$('#dictGrid');
+  dict.forEach(d=>{
+    const el=document.createElement('div'); el.className='dict-item';
+    el.innerHTML=`<div class="dhead"><h4>${esc(d.name)}</h4><span class="rows">${d.rows} rows</span></div>
+      <div class="meta">${esc(d.desc)}</div>
+      <ul>${d.cols.map(c=>`<li>${esc(c)}</li>`).join('')}</ul>`;
+    g.appendChild(el);
+  });
+})();
 </script>
 </body>
 </html>
